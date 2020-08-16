@@ -22,7 +22,7 @@ Steps to get it running using Quartus:-
   -  Setup CLK input, RESET input (on a button) and an output (which is mapped to 0xffffff00)
   -  Build and program onto an FPGA.  On the DE0-Nano it uses 3192 logic elelments (about 14% capacity)
   
-To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and pointed too for ram initialisation (covert.py coming to do this for you).
+Once started reset will need to be set low then high to get things running. To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and pointed too for ram initialisation (covert.py coming to do this for you).
 
 ## Performance
 
