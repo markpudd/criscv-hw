@@ -14,14 +14,14 @@ module criscv_testbench;
 		begin
 		$dumpfile ("criscv.vcd");
 	
-		reset =1;
+		reset =0;
 		#2
 		clk=0;
 		#2
 		clk = 1;
 		#2
 		clk=0;
-		reset =0;
+		reset =1;
 		
 		//$finish;
 	end

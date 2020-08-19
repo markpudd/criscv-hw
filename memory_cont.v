@@ -6,6 +6,39 @@
 			*  Add pre-fetch (likely next read is last read (pc) +4
 */
 
+
+/*
+	Memory layout
+	
+	--------------------------------
+	| 0x000000 |  RESET Vector		 |
+	--------------------------------
+	| 0x000004 |  ECALL Vector		 |
+	--------------------------------
+	| 0x000008 |  EBREAK Vector	 |
+	--------------------------------
+	| 0x00000c |  FENCE Vector		 |
+	--------------------------------
+	| 0x000010 |  ISR 1 Vector		 |
+	--------------------------------
+	| 0x000018 |  ISR 2 Vector		 |	
+	--------------------------------
+	| 0x000020 |  User code        |
+	--------------------------------
+	| 0xFFFF00 |  I/O Port         |
+	--------------------------------
+	| 0xFFFF00 |  I/O Port         |
+	--------------------------------
+	| 0xFFFF20 |  UART Port        |
+	--------------------------------
+	| 0xFFFF40 |  SPI  Port        |
+	--------------------------------
+	| 0xFFFF60 |  Audio  Port      |
+	--------------------------------
+	| 0xFFFF80 |  Video  Port      |
+	--------------------------------
+
+*/
 module memory_cont(input clk,
 						 input reset,
 						 output port,
@@ -30,7 +63,9 @@ module memory_cont(input clk,
 	reg i_port;
 	
 	
-	reg	[8:0]  br_address;
+	reg [31:0] reset_vector = 32'h00000000;
+	
+	reg	[11:0]  br_address;
 	reg	[15:0] br_data;
 	reg	  		 br_rden;
 	reg	  		 br_wren;
@@ -57,7 +92,7 @@ module memory_cont(input clk,
 					if(rw_req)
 						begin
 							i_address <= address;					
-							if(rw)
+							if(address == 32'hffffff00)
 							begin
 								i_port <= write_data[0];
 								delay<=0;
@@ -69,8 +104,8 @@ module memory_cont(input clk,
 							i_size <= size;
 							br_rden <= 1'b1;
 							br_wren <= 1'b0;	
-							br_address <= address[8:1];
-							case(i_size) 
+							br_address <= address[12:1];
+							case(size) 
 								2'h2: begin
 											mc_state = 3'h1;
 										end

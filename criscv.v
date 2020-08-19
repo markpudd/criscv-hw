@@ -8,6 +8,7 @@ module criscv(input  mclk,
    reg [2:0] funct3;
    reg modbit;
 	reg  alu_clk = 1'b0;
+
    reg [31:0] imm_i;
 	reg [31:0] imm_b;
 	reg [31:0] imm_j;
@@ -21,7 +22,7 @@ module criscv(input  mclk,
    wire  [31:0] rd;
 
 	
-	reg [31:0]  pc=0;
+	reg [31:0]  pc= 32'h0000008c;
 	reg [31:0]  inst;
 	reg [31:0]  regs [31:0] ;
 	reg [2:0] state =0;
@@ -44,7 +45,13 @@ module criscv(input  mclk,
 	reg [1:0] mem_size;
 	wire [31:0] mem_read_data;
 	
+
+	//wire cclk;
 	
+	
+	//clock clock (
+	//				.inclk0(mclk),
+	//				.c0(cclk));
 	
 	alu  alui(.clk(alu_clk), 
 				 .funct3(funct3), 
@@ -108,7 +115,8 @@ module criscv(input  mclk,
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <=0;
+		pc <= 32'h00000000;
+		regs[2] <= 32'h00001FFC;  //Stack intialization
 		state <=0;
 		alu_clk <=0;
 		led <= 0;
@@ -241,7 +249,7 @@ module criscv(input  mclk,
 														pc <= pc+4;
 													end
 										3'b110 : begin                                        // BLTU
-													if(rs1 >= rs2) 
+													if(rs1 < rs2) 
 														pc <= pc+imm_b;
 													else
 														pc <= pc+4;
@@ -258,23 +266,29 @@ module criscv(input  mclk,
 							end
 					7'b1101111 :  // JAL
 							begin
-								 pc <= pc+imm_j+4;
+								 if(rd_index !=0)
+									regs[rd_index] <= pc+4;
+								 pc <= pc+$signed(imm_j);
 								 state <= 3'h0;
 							end
 					7'b1100111 :  // JALR
 							begin
-								 pc <= pc+rs1+imm_i+4;
+								if(rd_index !=0)
+									 regs[rd_index] <= pc+4;
+								 pc <= rs1+$signed(imm_i);
 								 state <= 3'h0;
 							end
 					7'b0110111 :  // LUI
 							begin
-								 regs[rd_index] <= imm_u;
+								if(rd_index !=0)
+									 regs[rd_index] <= imm_u;
 								 pc <= pc + 4;
 								 state <= 3'h0;								 
 							end
 					7'b0010111 :  // AUIPC
 							begin
-								regs[rd_index] = pc+ imm_u;
+								if(rd_index !=0)
+									regs[rd_index] = pc+ imm_u;
 								pc <= pc + 4;
 							   state <= 3'h0;	
 							end
