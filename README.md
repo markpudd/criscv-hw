@@ -28,6 +28,28 @@ Once started reset will need to be set low then high to get things running. To b
 
 Using a 50Mhz clock this will take between 10-20 clock cycle per instruction mainly due to memory access , which could be optimised.   Its liklely a PLL could be used to increase the internal clock speed and accelerate this substaniatly.
 
+## Running a binary
+
+You can run a binary built with the RISC-V gcc toolchain (and newlib).   At the moment this is built in when you create the core so is a bit of a convooluted process.
+
+Build with
+
+          - /opt/riscv/bin/riscv32-unknown-elf-gcc -ffreestanding -pedantic -nostartfiles -Wl,-N -Wall test.c
+
+This will build a binary with no start up code (so just the raw code for main and any other function you have).  It will also disable paging so the .sdata section will be located directly after .text section.   You will get a warning saying that there is no entry function.  To get code running in the short term you will need to set the pc on start-up.   Get the address of main by ruinning:-
+
+          - /opt/riscv/riscv32-unknown-elf/bin/readelf -s a.out
+
+And noting down the address of main.  You will need to set the pc in crisc.v were reset is checked (arround line 120).
+
+The next step is to conver the elf binary to hex with bintohex.py (this also currently change endianist which will change in a future revision).
+
+          - python bintohex.py a.out > boot.hex
+         
+Finally copy the hex file and add to your Quartus project, then in the MegaFunction verilog set the init_file to the hex file you've copied accross.
+
+There is no memory overwrite protection or checking of sizes.   You will also potentially have to change the stack adress in reset if you have configured a different amount of RAM.
+
 ## TODO
 
 Few thing likely to:-
