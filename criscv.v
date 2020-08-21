@@ -1,6 +1,7 @@
 module criscv(input  mclk,
 					input  reset,
 					output wire port,
+					output wire sout,
 					output reg led);
 
 
@@ -22,7 +23,7 @@ module criscv(input  mclk,
    wire  [31:0] rd;
 
 	
-	reg [31:0]  pc= 32'h0000008c;
+	reg [31:0]  pc= 32'h000000c0;
 	reg [31:0]  inst;
 	reg [31:0]  regs [31:0] ;
 	reg [2:0] state =0;
@@ -66,6 +67,7 @@ module criscv(input  mclk,
 	 memory_cont memory_cont( 	.clk(mclk),
 										.reset(reset),
 										.port(port),
+									   .sout(sout),
 										.address(mem_address),
 										.rw_req(mem_rw_req),
 										.rw(mem_rw),
@@ -75,7 +77,7 @@ module criscv(input  mclk,
 										.data_valid(mem_rec));
 										
 										
-										
+			uart  uart(sclk, dout,reset,ss,data);								
 	initial
 	begin
 		state=0;
@@ -115,7 +117,7 @@ module criscv(input  mclk,
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <= 32'h00000000;
+		pc <= 32'h0000008c;
 		regs[2] <= 32'h00001FFC;  //Stack intialization
 		state <=0;
 		alu_clk <=0;
@@ -188,11 +190,11 @@ module criscv(input  mclk,
 												mem_size <= 2;
 												end
 									3'b100 : begin
-												mem_address <= rs1+imm_i ;				         // LBU
+												mem_address <= rs1+$signed(imm_i) ;				         // LBU
 												mem_size <= 0;
 												end
 									3'b101 : begin
-												mem_address <= rs1+imm_i ; 						// LHU
+												mem_address <= rs1+$signed(imm_i) ; 						// LHU
 												mem_size <= 1;
 												end										
 									// TODO Default excpetion
@@ -305,7 +307,12 @@ module criscv(input  mclk,
 		3'h3: begin   // Load Complete
 				if(mem_rec)
 				begin
-					regs[rd_index] <= mem_read_data;
+					if(funct3== 3'b000)
+						regs[rd_index] <= $signed(mem_read_data[7:0]);
+					else if(funct3== 3'b001)
+						regs[rd_index] <= $signed(mem_read_data[15:0]);
+					else
+						regs[rd_index] <= mem_read_data;
 					mem_rw_req<= 0;
 					pc <= pc + 4;
 					state <= 3'h0;

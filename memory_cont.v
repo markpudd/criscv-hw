@@ -42,6 +42,7 @@
 module memory_cont(input clk,
 						 input reset,
 						 output port,
+						 output sout,
 						 input wire [31:0] address,
 						 input wire rw_req,
 						 input wire  rw,
@@ -53,16 +54,18 @@ module memory_cont(input clk,
 
 	reg reading;
 
-	localparam MEMORY_DELAY = 2; 
+	localparam MEMORY_DELAY = 3'h2; 
 
 	reg [31:0] i_address;
 	reg i_rw;
 	reg [1:0] i_size;
+	reg [31:0] i_write_data;
 	reg [31:0] i_read_data;
+	reg [31:0] i_read_data_f;
 	reg i_data_valid=0;
 	reg i_port;
 	
-	
+	reg [1:0] be;
 	reg [31:0] reset_vector = 32'h00000000;
 	
 	reg	[11:0]  br_address;
@@ -72,7 +75,13 @@ module memory_cont(input clk,
 	wire	[15:0] br_q;
 	
 	
-	bootram bootram(br_address,clk,br_data,br_rden,br_wren,br_q);
+	reg  ss;
+	reg  [7:0] sdata;
+	
+	uart  uart(clk, sout,reset,ss,sdata);
+
+	
+	bootram bootram(br_address,be,clk,br_data,br_rden,br_wren,br_q);
 
 	reg [2:0] mc_state=0;
 	reg [2:0] delay=0;
@@ -99,29 +108,47 @@ module memory_cont(input clk,
 								mc_state = 3'h6;
 							end
 							else
+							if(address == 32'hffffff01)
+							begin
+								sdata <= write_data[7:0];
+								ss<=1;
+								delay<=3;
+								mc_state = 3'h6;
+							end
+							else							
+							
 							begin
 							// read first word
 							i_size <= size;
+							be = 2'b11;
 							br_rden <= 1'b1;
 							br_wren <= 1'b0;	
+							i_read_data <= 32'h00000000;
 							br_address <= address[12:1];
 							case(size) 
 								2'h2: begin
 											mc_state = 3'h1;
+											i_write_data <= {write_data[7:0],
+												 write_data[15:8],
+												 write_data[23:16],
+												 write_data[31:24]};										
 										end
 								2'h1: begin
 											mc_state = 3'h3;
+											i_write_data <= { write_data[7:0],
+												 write_data[15:8]};	
 										end
 								2'h0: begin
 											mc_state = 3'h5;
-										end									
+											i_write_data <=  write_data[7:0];
+										end	
 							endcase	
 							delay<=MEMORY_DELAY;
 						end
 						end
 					end
 			3'h1: begin 	 //  pt1
-						delay <= delay-1;
+						delay <= delay-3'h1;
 						if(delay==0)
 							begin
 							if(rw==0)
@@ -130,15 +157,21 @@ module memory_cont(input clk,
 									i_read_data[31:16] <= br_q;
 								else
 									i_read_data[31:24] <= br_q[7:0];
-								br_address <= br_address+1;
+								br_address <= br_address+12'h1;
 								mc_state <= 3'h3;
 							end
 							else
 							begin
 								if(i_address[0] == 1'b0)
-									br_data[15:0] <= write_data[31:16];
+								begin
+									br_data[15:0] <= i_write_data[31:16];
+									be = 2'b11;
+								end
 								else
-									br_data[7:0] <= write_data[31:24];
+									begin
+									br_data[7:0] <= i_write_data[31:24];
+									be = 2'b01;
+								end
 								br_rden <= 1'b0;
 								br_wren <= 1'b1;	
 								mc_state <= 3'h2;
@@ -147,10 +180,10 @@ module memory_cont(input clk,
 						end
 					end
 			3'h2: begin
-						delay <= delay-1;
+						delay <= delay-3'h1;
 						if(delay==0)
 							begin
-						br_address <= br_address+1;
+						br_address <= br_address+12'h1;
 						br_rden <= 1'b1;
 						br_wren <= 1'b0;	
 						mc_state <= 3'h3;
@@ -173,18 +206,20 @@ module memory_cont(input clk,
 								i_read_data[23:8] <= br_q;
 								mc_state = 3'h5;
 							end
-							br_address <= br_address+1;
+							br_address <= br_address+12'h1;
 						end
 						else
 						begin
 							if(i_address[0] == 1'b0)
 							begin
-								br_data[15:0] <= write_data[15:0];
+								br_data[15:0] <= i_write_data[15:0];
+								be = 2'b11;
 								mc_state <= 3'h6;		
 							end
 							else
 							begin
-								br_data[15:0] <= write_data[23:8];
+								br_data[15:0] <= i_write_data[23:8];
+								be = 2'b11;
 							end
 							br_rden <= 1'b0;
 							br_wren <= 1'b1;				
@@ -197,7 +232,7 @@ module memory_cont(input clk,
 						delay <= delay-3'h1;
 						if(delay==0)
 							begin
-						br_address <= br_address+1;
+						br_address <= br_address+12'h1;
 						br_rden <= 1'b1;
 						br_wren <= 1'b0;	
 						mc_state <= 3'h5;
@@ -221,9 +256,15 @@ module memory_cont(input clk,
 						else
 						begin
 							if(i_address[0] == 1'b0)
-								br_data[15:8] <= write_data[7:0];	
+							begin
+								br_data[15:8] <= i_write_data[7:0];	
+								be = 2'b10;
+							end
 							else
-								br_data[7:0] <= write_data[7:0];
+							begin
+								br_data[7:0] <= i_write_data[7:0];
+								be = 2'b01;
+							end
 							br_rden <= 0;
 							br_wren <= 1;						
 						end
@@ -231,7 +272,17 @@ module memory_cont(input clk,
 						delay <=MEMORY_DELAY;
 						end
 					end
-			3'h6: begin 	 // read pt1
+			3'h6: begin 	 // read pt1 and sort out endianess
+						if(i_size == 2'h2)
+							i_read_data_f <= {i_read_data[7:0],
+												   i_read_data[15:8],
+												   i_read_data[23:16],
+												   i_read_data[31:24]};
+						if(i_size == 2'h1)
+							i_read_data_f <= {i_read_data[7:0],
+						   						i_read_data[15:8]};					
+						if(i_size == 2'h0)
+							i_read_data_f <= i_read_data[7:0];					
 						i_data_valid <= 1;
 						br_rden <= 1'b0;
 						br_wren <= 1'b0;	
@@ -239,14 +290,16 @@ module memory_cont(input clk,
 					end		
 			3'h7: begin 	 // read pt1
 						i_data_valid <= 0;
+						ss<=0;
 						mc_state = 3'h0;
 					end	
 		endcase
 		end
 	end
 	
+	
 	assign data_valid = i_data_valid;
 	assign  port = i_port;
-	assign read_data = i_read_data;			 
+	assign read_data = i_read_data_f;			 
 
 endmodule
