@@ -1,8 +1,13 @@
 module criscv(input  mclk,
 					input  reset,
-					output wire port,
-					output wire sout,
-					output reg led);
+					output reg led,
+					output reg [31:0] mem_address,
+					output reg mem_rw_req,
+				   output reg mem_rw,
+				   output reg [31:0] mem_write_data,
+					output reg [1:0] mem_size,
+					input [31:0] mem_read_data,
+					input mem_rec);
 
 
 
@@ -21,38 +26,44 @@ module criscv(input  mclk,
 	reg [5:0] rd_index;
 	
    wire  [31:0] rd;
-
+	/*
+	reg led;
+	 reg [31:0] mem_address;
+	 reg mem_rw_req;
+	 reg  mem_rw;
+	 reg[31:0] mem_write_data;
+	 reg[1:0] mem_size;
+	*/
 	
 	reg [31:0]  pc= 32'h000000c0;
 	reg [31:0]  inst;
 	reg [31:0]  regs [31:0] ;
-	reg [2:0] state =0;
+	reg [2:0]   state =0;
 
-	wire mem_rec;
+
 	wire alu_comp;
-	
-	//wire [31:0] mem_address_w;
+
+	/*
+	wire mem_rec;
 	reg [31:0] mem_address;
-	
-//	wire mem_rw_req_w;
 	reg mem_rw_req;
-//	wire mem_rw_w;
 	reg mem_rw;
-	
-	
 	reg [31:0] mem_write_data;
-		
-	//wire [1:0] mem_size_w;
 	reg [1:0] mem_size;
 	wire [31:0] mem_read_data;
-	
+		 memory_cont memory_cont( 	.clk(mclk),
+										.reset(reset),
+										.port(port),
+									   .sout(sout),
+										.address(mem_address),
+										.rw_req(mem_rw_req),
+										.rw(mem_rw),
+										.write_data(mem_write_data),
+										.size(mem_size),
+										.read_data(mem_read_data),
+										.data_valid(mem_rec));*/
 
-	//wire cclk;
-	
-	
-	//clock clock (
-	//				.inclk0(mclk),
-	//				.c0(cclk));
+
 	
 	alu  alui(.clk(alu_clk), 
 				 .funct3(funct3), 
@@ -64,61 +75,21 @@ module criscv(input  mclk,
 				 .rd(rd),
 				 .comp(alu_comp));
 	
-	 memory_cont memory_cont( 	.clk(mclk),
-										.reset(reset),
-										.port(port),
-									   .sout(sout),
-										.address(mem_address),
-										.rw_req(mem_rw_req),
-										.rw(mem_rw),
-										.write_data(mem_write_data),
-										.size(mem_size),
-										.read_data(mem_read_data),
-										.data_valid(mem_rec));
-										
-										
-			uart  uart(sclk, dout,reset,ss,data);								
+
+																										
+	
 	initial
 	begin
 		state=0;
 		alu_clk =0;
 	end
-	
-		/*					imm_i =  $signed(mem_read_data[31:20]);
-						rd1_index = mem_read_data[19:15];
-						rd2_index = mem_read_data[24:20];
-	
-						rd_index = mem_read_data[11:7];
-						funct3 = mem_read_data[14:12];
-						modbit =mem_read_data[30];
-						imm_s =  $signed({mem_read_data[31:25], mem_read_data[11:7]});
-						imm_b = $signed({mem_read_data[31] ,mem_read_data[7],mem_read_data[30:25],mem_read_data[11:8], 1'b0});
-						imm_j = $signed({mem_read_data[31],  mem_read_data[19:12], mem_read_data[20], mem_read_data[30:21] ,1'b0 });
-						imm_u = mem_read_data & 32'hFFFFF000;
-					opcode = mem_read_data[6:0];
-	
-	
 
-	always @(*)
-	begin
-
-			if(mem_read_data[19:15] == 0)
-				rs1 <= 0;
-			else
-				rs1 <= regs[mem_read_data[19:15]];
-			if(mem_read_data[24:20] == 0)
-				rs2 <= 0;
-			else						
-				rs2 <= regs[mem_read_data[24:20]];
-	end
-	*/
-	
 	
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <= 32'h0000008c;
-		regs[2] <= 32'h00001FFC;  //Stack intialization
+		pc <= 32'h000000C0;
+		regs[2] <= 32'h00000FFC;  //Stack intialization
 		state <=0;
 		alu_clk <=0;
 		led <= 0;

@@ -7,42 +7,9 @@
 */
 
 
-/*
-	Memory layout
-	
-	--------------------------------
-	| 0x000000 |  RESET Vector		 |
-	--------------------------------
-	| 0x000004 |  ECALL Vector		 |
-	--------------------------------
-	| 0x000008 |  EBREAK Vector	 |
-	--------------------------------
-	| 0x00000c |  FENCE Vector		 |
-	--------------------------------
-	| 0x000010 |  ISR 1 Vector		 |
-	--------------------------------
-	| 0x000018 |  ISR 2 Vector		 |	
-	--------------------------------
-	| 0x000020 |  User code        |
-	--------------------------------
-	| 0xFFFF00 |  I/O Port         |
-	--------------------------------
-	| 0xFFFF00 |  I/O Port         |
-	--------------------------------
-	| 0xFFFF20 |  UART Port        |
-	--------------------------------
-	| 0xFFFF40 |  SPI  Port        |
-	--------------------------------
-	| 0xFFFF60 |  Audio  Port      |
-	--------------------------------
-	| 0xFFFF80 |  Video  Port      |
-	--------------------------------
 
-*/
 module memory_cont(input clk,
 						 input reset,
-						 output port,
-						 output sout,
 						 input wire [31:0] address,
 						 input wire rw_req,
 						 input wire  rw,
@@ -63,61 +30,50 @@ module memory_cont(input clk,
 	reg [31:0] i_read_data;
 	reg [31:0] i_read_data_f;
 	reg i_data_valid=0;
-	reg i_port;
 	
-	reg [1:0] be;
-	reg [31:0] reset_vector = 32'h00000000;
-	
-	reg	[11:0]  br_address;
-	reg	[15:0] br_data;
-	reg	  		 br_rden;
-	reg	  		 br_wren;
-	wire	[15:0] br_q;
+	reg [1:0] be= 2'b11;	
+	reg [11:0]  br_address= 12'h00000000;
+	reg [15:0] br_data;
+	reg	  		 br_rden= 1'b0;
+	reg	  		 br_wren= 1'b0;
+	wire [15:0] br_q;
 	
 	
-	reg  ss;
-	reg  [7:0] sdata;
-	
-	uart  uart(clk, sout,reset,ss,sdata);
+	ram ram(.address(br_address),
+				.byteena(be),
+				.clock(clk),
+				.data(br_data),
+				//.rden(br_rden),
+				.wren(br_wren),
+				.q(br_q));
 
-	
-	bootram bootram(br_address,be,clk,br_data,br_rden,br_wren,br_q);
-
-	reg [2:0] mc_state=0;
+	reg [2:0] mc_state=3'h0;
 	reg [2:0] delay=0;
 
+	assign data_valid = i_data_valid;
+	assign read_data = i_read_data_f;		
+	
+	
 	always @ ( posedge clk) begin
 		if(~reset)
 		begin
 			i_data_valid <=0;
-			mc_state<=0;
+			i_size <= 0;
+			mc_state<=3'h0;
+			br_rden <= 1'b0;	
+			br_wren <= 1'b0;	
+			br_address <= 12'h00000000;
+			be<= 2'b11;
 			delay <=0;
 		end
 		else
-		begin
+		if(~address[31])
 		case(mc_state)
 			3'h0: begin   // 
 					i_data_valid <= 0;
 					if(rw_req)
 						begin
 							i_address <= address;					
-							if(address == 32'hffffff00)
-							begin
-								i_port <= write_data[0];
-								delay<=0;
-								mc_state = 3'h6;
-							end
-							else
-							if(address == 32'hffffff01)
-							begin
-								sdata <= write_data[7:0];
-								ss<=1;
-								delay<=3;
-								mc_state = 3'h6;
-							end
-							else							
-							
-							begin
 							// read first word
 							i_size <= size;
 							be = 2'b11;
@@ -144,7 +100,6 @@ module memory_cont(input clk,
 										end	
 							endcase	
 							delay<=MEMORY_DELAY;
-						end
 						end
 					end
 			3'h1: begin 	 //  pt1
@@ -241,7 +196,7 @@ module memory_cont(input clk,
 					end
 
 			3'h5: begin 	 // read pt1
-												delay <= delay-3'h1;
+						delay <= delay-3'h1;
 						if(delay==0)
 							begin
 						if(rw==0)
@@ -275,12 +230,12 @@ module memory_cont(input clk,
 			3'h6: begin 	 // read pt1 and sort out endianess
 						if(i_size == 2'h2)
 							i_read_data_f <= {i_read_data[7:0],
-												   i_read_data[15:8],
-												   i_read_data[23:16],
-												   i_read_data[31:24]};
+													i_read_data[15:8],
+													i_read_data[23:16],
+													i_read_data[31:24]};
 						if(i_size == 2'h1)
 							i_read_data_f <= {i_read_data[7:0],
-						   						i_read_data[15:8]};					
+													i_read_data[15:8]};					
 						if(i_size == 2'h0)
 							i_read_data_f <= i_read_data[7:0];					
 						i_data_valid <= 1;
@@ -290,16 +245,12 @@ module memory_cont(input clk,
 					end		
 			3'h7: begin 	 // read pt1
 						i_data_valid <= 0;
-						ss<=0;
 						mc_state = 3'h0;
 					end	
 		endcase
-		end
 	end
 	
 	
-	assign data_valid = i_data_valid;
-	assign  port = i_port;
-	assign read_data = i_read_data_f;			 
+		 
 
 endmodule

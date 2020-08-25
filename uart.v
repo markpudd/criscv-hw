@@ -2,18 +2,21 @@ module uart(input wire sclk,
 				   output wire dout,
 				   input reset,
 				   input wire ss,
-				   input wire [7:0] data);
+				   input wire [7:0] data,
+					output wire busy);
 
 	localparam UART_TIME_DELAY = 13'h1458; 				
 					
 	reg [2:0] in_pos;
 	reg [7:0] i_data;
+	reg fin;
 	reg i_dout;
 	reg sending;
 	reg [13:0] delay;
 	reg [2:0] state;
 
 	assign dout = i_dout;
+	assign busy = sending;
 	
 	always @(posedge sclk)
 	begin
@@ -48,14 +51,13 @@ module uart(input wire sclk,
 					end
 					
 			3'h2: begin     // Data bits
-									i_dout <= i_data[in_pos];
+					i_dout <= i_data[in_pos];
 					if(delay == 13'h0)
 					begin
-
 						if(in_pos == 3'b111)
 						begin
 							in_pos<=3'b000;
-							delay <= UART_TIME_DELAY;
+							delay <= 13'h0;
 							state = 3'h3;
 						end
 						else
@@ -79,7 +81,7 @@ module uart(input wire sclk,
 					else
 						delay <= delay -13'h1;
 					end
-			3'h4: begin   //finish
+		/*	3'h4: begin   //finish
 					if(delay == 13'h0)
 					begin
 						i_dout <= 1'b0;
@@ -88,7 +90,7 @@ module uart(input wire sclk,
 					end
 					else
 						delay <= delay -13'h1;
-					end
+					end*/
 			3'h5: begin   //finish
 	
 					if(delay == 13'h0)
