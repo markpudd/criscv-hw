@@ -2,6 +2,11 @@
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  The fn.hex file is a basic Hello World which sends Hello World out on sout (9600 with 50Mhz clock) and blinks port.
 
+## SDRAM and UART
+
+There is now some basic support for SDRAM and UART.  Both are pretty simple and buggy (especially the SDRAM) at the moment.  Its likely the SDRAM will get converted into page read/right and a cache which will be simpler and more performant.
+
+
 ## How to get it running
 
 This is a simple 3 state FSM (Fetch, decode, execute), with an extra state for memory commands (load and store), not everything has been tested so there is likely issues with some commands.

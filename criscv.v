@@ -10,7 +10,10 @@ module criscv(input  mclk,
 					input mem_rec);
 
 
-
+	localparam START_DELAY= 32'd501000; 		
+	reg [31:0] delay;
+	
+	
    reg [2:0] funct3;
    reg modbit;
 	reg  alu_clk = 1'b0;
@@ -89,15 +92,23 @@ module criscv(input  mclk,
 	if(~reset)
 	begin
 		pc <= 32'h000000C0;
-		regs[2] <= 32'h00000FFC;  //Stack intialization
-		state <=0;
+		regs[2] <= 32'h00000FFC;  //Stack intialization - To be replaced with bootloader
+		state <=5;
 		alu_clk <=0;
 		led <= 0;
+		delay <= START_DELAY;
 	end
 	else
 	begin
 	led <= 1;
 	case(state)
+		3'h5:  begin   // Start delay (SDRAM)
+				if(delay == 0)
+					state <= 3'h0;
+				else
+					delay = delay-1;
+		
+				end
 		3'h0: begin   // Fetch instruction
 				if(alu_clk && rd_index !=0)
 					regs[rd_index] <= rd;
@@ -282,6 +293,10 @@ module criscv(input  mclk,
 						regs[rd_index] <= $signed(mem_read_data[7:0]);
 					else if(funct3== 3'b001)
 						regs[rd_index] <= $signed(mem_read_data[15:0]);
+					else if(funct3== 3'b100)
+						regs[rd_index] <= {24'h0,mem_read_data[7:0]};
+					else if(funct3== 3'b101)
+						regs[rd_index] <= {16'h0,mem_read_data[15:0]};
 					else
 						regs[rd_index] <= mem_read_data;
 					mem_rw_req<= 0;
