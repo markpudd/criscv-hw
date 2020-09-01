@@ -2,7 +2,7 @@
 module sdram(
 				input	  clk,
 				input reset,
-				input	[32:0]  address,
+				input	[31:0]  address,
 				input wire rw_req,
 				input wire  rw,
 				input wire[31:0] write_data,
@@ -25,11 +25,11 @@ module sdram(
 				output wire dram_ba0,
 				output wire dram_ba1);
 
-	localparam START_DELAY= 32'd500000; 		
-//localparam START_DELAY= 24'd2; 		
-	localparam CAS_DELAY= 32'd1; 					
-	localparam BANK_DELAY= 32'd1; 	
-		localparam WRITE_DELAY= 32'd6; 					
+	localparam START_DELAY= 32'd5000; 				
+	
+	localparam CAS_DELAY= 32'd1;   //cycles					
+	localparam BANK_DELAY= 32'd2;  //cycles	
+					
 
 	reg [3:0] state;				
 
@@ -55,6 +55,8 @@ module sdram(
 	reg rf=0;
 		
 	assign dram_addr=i_dram_addr;
+	
+	
 	assign dram_cke=i_dram_cke;
 	assign dram_we_n = i_dram_we_n;
 	assign dram_cas_n =i_dram_cas_n;
@@ -62,7 +64,7 @@ module sdram(
 	assign dram_cs_n = i_dram_cs_n;
 	assign dram_ba0 = i_dram_ba0;
 	assign dram_ba1 = i_dram_ba1;
-	
+	reg mode_set;
 	reg i_wren;
 	
 	assign dram_dqm = i_dram_dqm; //2'b00; //be^2'b11;
@@ -72,7 +74,7 @@ module sdram(
 	assign data_valid = i_data_valid;
 
 
-	always @ (posedge mclk) begin
+	always @ (posedge clk) begin
 
 		if(~reset)
 		begin
@@ -87,6 +89,7 @@ module sdram(
 			wh <= 0;
 			rf <=0;
 			state<=4'h0;
+			mode_set <=0;
 			delay<=START_DELAY;
 		end
 		else
@@ -119,14 +122,19 @@ module sdram(
 						i_dram_ba0 <= 1'b0;
 						i_dram_ba1 <= 1'b0;
 						state<=4'h3;
-						delay<=16384;
+						delay<=18;
 						 end
 				4'h3: begin   //AUTO REFRESH 1
 						if(delay==0)
-							state<=4'h5;
+						begin
+							if(mode_set == 0)
+								state<=4'h5;
+							else
+								state<=4'h6;
+						end
 						else
 						begin
-						if(delay[0] ==0)
+						if(delay ==16 || delay == 8)
 							begin
 								i_dram_cke <= 1'b1; // AUTO REFRESH
 								i_dram_cs_n <= 1'b0;
@@ -134,7 +142,7 @@ module sdram(
 								i_dram_cas_n <= 1'b0;
 								i_dram_we_n <= 1'b1;
 							end
-							else
+							else 
 							begin
 								i_dram_cs_n <= 1'b0;  //NOP
 								i_dram_ras_n <= 1'b1;
@@ -158,14 +166,15 @@ module sdram(
 							i_dram_addr[6] <= 1'b0;
 							i_dram_addr[7] <= 1'b0;
 							i_dram_addr[8] <= 1'b0;
-							i_dram_addr[9] <= 1'b1;   // Write Burst
+							i_dram_addr[9] <= 1'b0;   // Write Burst
 							i_dram_addr[10] <= 1'b0;
 							i_dram_addr[11] <= 1'b0;
 							i_dram_addr[12] <= 1'b0;
 							i_dram_ba0 <= 1'b0;
 							i_dram_ba1 <= 1'b0;
-								delay<=5;
-							state<=4'hD;
+							mode_set <=1;
+								delay<=1;
+							state<=4'h6;
 					   end
 					4'hD: begin  //Load Mode register
 						if(delay ==0)
@@ -184,29 +193,33 @@ module sdram(
 					   end
 				4'h6: begin  //Open Bank
 					i_data_valid <=0;
-						if((rw_req==1 || wh==1) && delay==0 && address>= 32'h2FFFF && ~address[31] && rf==0 )
+						if((rw_req==1 || wh==1) && delay==0 && address>= 32'h30000 && ~address[31] && rf==0 )
 						begin
 								if(wh==0) 
 								begin
-									i_address = (address-32'h2FFFF);
+									i_address = (address-32'h30000);
 									i_size <= size;
 								end
 								else 
-									i_address=i_address+2;
-								
-								i_address = (address-32'h2FFFF);
+									i_address=address+2;
+									
+								if(rw)
+									i_wren <=1;
+								else
+									i_wren <=0;
+									
+								//i_address = (address-32'h2FFFF);
 								i_dram_cs_n <= 1'b0;  //OPEN BANK/ROW
 								i_dram_ras_n <= 1'b0;
 								i_dram_cas_n <= 1'b1;
 								i_dram_we_n <= 1'b1;
 								i_dram_addr[12:0]<= 12'h0; //address[12:0];
-								i_dram_ba0 <= 1'b0; //address[13];
+								i_dram_ba0 <= 1'b1; //address[13];
 								i_dram_ba1 <=  1'b0; //address[14];
 								if(size == 2'b0 && rw==1'b1) 
-									i_dram_dqm <= {~address[0], address[0]};		
-
+									i_dram_dqm <= {address[0], ~address[0]};		
 								else
-								i_dram_dqm <= 2'b00;
+									i_dram_dqm <= 2'b00;
 								delay<=BANK_DELAY;
 								state<=4'h7;
 						end
@@ -216,29 +229,13 @@ module sdram(
 								delay <= delay -31'h1;
 							else
 								delay<=0;
-							if(delay == 0)
+							if(delay == 0) 
 							begin
-							if(rf ==0)
-							begin
-									i_dram_cke <= 1'b1; // AUTO REFRESH
-									i_dram_cs_n <= 1'b0;
-									i_dram_ras_n <= 1'b0;
-									i_dram_cas_n <= 1'b0;
-									i_dram_we_n <= 1'b1;
-									rf<=1;
+								state<=4'h3;
+								delay<=8;
+							end
 								end
-								else
-								begin
-									i_dram_cs_n <= 1'b0;  //NOP
-									i_dram_ras_n <= 1'b1;
-									i_dram_cas_n <= 1'b1;
-									i_dram_we_n <= 1'b1;
-									rf<=0;
-									
-									delay<=4;
-								end
-							 end
-							 end
+							
 						end
 						
 				4'h7: begin  // Wait for Req	
@@ -246,7 +243,7 @@ module sdram(
 						begin
 							i_dram_addr[9:0] =i_address[10:1];  // column
 							i_dram_addr[10] <= 1'b1;
-							i_dram_ba0 <=  1'b0; //address[13];
+							i_dram_ba0 <=  1'b1; //address[13];
 							i_dram_ba1 <=  1'b0; //address[14];
 							if(rw==0)   
 							begin
@@ -264,17 +261,18 @@ module sdram(
 								i_dram_ras_n <= 1'b1;
 								i_dram_cas_n <= 1'b0;
 								i_dram_we_n <= 1'b0;
-								i_wren <=1;
+								
 								case(i_size)
 									2'h2: begin
 											if(wh)
 											begin
-												dout <= {write_data[7:0],write_data[15:8]};
+												dout <= {write_data[23:16],write_data[31:24]};
+										
 												wh<=0;
 											end
 											else
 											begin
-												dout <= {write_data[23:16],write_data[31:24]};
+													dout <= {write_data[7:0],write_data[15:8]};
 												wh<=1;
 											end
 											end
@@ -282,17 +280,18 @@ module sdram(
 												dout <= {write_data[7:0],write_data[15:8]};
 											end
 									2'h0: begin
-												if(~i_address[0])
+												if(i_address[0])
 												begin
-													dout[15:8] <= write_data[7:0];
+													dout[7:0] <= {8'h0,write_data[7:0]};
 												end
 												else
 												begin
-													dout[7:0] <= write_data[7:0];
+													dout[15:8] <= {8'h0,write_data[7:0]};
 												end
 											end
 									endcase
-								delay<=CAS_DELAY;
+							//	i_dram_dqm=2'b00;
+								delay<=6;
 								state<=4'hC;
 							end
 						end
@@ -334,24 +333,25 @@ module sdram(
 										i_data_valid <=1;
 									end
 							2'h0: begin
-										if(~i_address[0])
+										if(i_address[0])
 										begin
-											din[7:0] <= dram_dq[15:8];
+											din <= {24'h0,dram_dq[7:0]};
 										end
 										else
 										begin
-											din[7:0] <= dram_dq[7:0];
+											din <= {24'h0,dram_dq[15:8]};
 										end
 										i_data_valid <=1;
 									end
 								endcase
-							delay<=31'd1;
-							state<=4'h6;
+							delay<=31'd0;
+							state<=4'h9;
 						end
 						else
 					    	delay <= delay -31'h1;
 						end
-				4'hC: begin  //WRITE FINISH
+				4'h9: begin  //READ FINISH
+						i_data_valid <=0;
 						i_dram_cs_n <= 1'b0;  //NOP
 						i_dram_ras_n <= 1'b1;
 						i_dram_cas_n <= 1'b1;
@@ -359,10 +359,25 @@ module sdram(
 						i_dram_dqm <= 2'b0;
 						if(delay == 31'h0)
 						begin
+							delay<=0;
+							state<=4'h6;
+						end
+								else
+					    	delay <= delay -31'h1;
+						 end			
+				4'hC: begin  //WRITE FINISH
+						i_dram_cs_n <= 1'b0;  //NOP
+						i_dram_ras_n <= 1'b1;
+						i_dram_cas_n <= 1'b1;
+						i_dram_we_n <= 1'b1;
+						i_dram_dqm <= 2'b0;
 						i_wren <=0;
+						if(delay == 31'h0)
+						begin
+
 						if(~wh)
 							i_data_valid <=1;
-						delay<=31'd3;
+						delay<=0;
 						state<=4'h6;
 						end
 								else

@@ -50,10 +50,10 @@ module top(input  mclk,
 	
 	//assign port = pport;
 	
-	assign read_data = ~address[31]? (address<32'h2FFFF ?  mread_data : dread_data)
+	assign read_data = ~address[31]? (address<32'h30000 ?  mread_data : dread_data)
 										  :  pread_data;
 	
-	assign rec = ~address[31]? (address<32'h2FFFF ?  drec : sdrec)
+	assign rec = ~address[31]? (address<32'h30000 ?  drec : sdrec)
 										  :  prec;
 	//assign read_data = ~address[31]? mread_data :   pread_data;
 			
@@ -86,7 +86,7 @@ module top(input  mclk,
 										.data_valid(drec));
 															
 	 
-	 sdram sdram(.clk(mclk),
+	 sdram sdram(.clk(dram_clkp),
 										.reset(reset),
 										.address(address),
 										.rw_req(rw_req),
@@ -96,7 +96,7 @@ module top(input  mclk,
 										.read_data(dread_data),
 										.data_valid(sdrec),
 					
-					.mclk(dram_clkp),
+					.mclk(dram_clk),
 					.dram_dq(dram_dq),
 					.dram_addr(dram_addr),
 					.dram_dqm(dram_dqm),
