@@ -10,12 +10,14 @@ module uart(input wire sclk,
 					input wire rr);
 
 	localparam UART_TIME_DELAY = 16'h1458; 						
-		localparam UART_TIME_RDELAY = 18'ha2c; 
-				
+	localparam UART_TIME_RDELAY = 18'ha2c; 
+
+
+	
 	reg [2:0] in_pos;
 	reg [7:0] i_data;
 	reg [9:0] shiftin;
-	reg [9:0] shiftout;
+	reg [10:0] shiftout;
 
 	reg fin;
 	reg i_dout;
@@ -53,21 +55,21 @@ module uart(input wire sclk,
 		else
 		begin
 			// Sync clock falling on edge
-			if(last_din != din) 
+			if(din & (last_din != din)) 
 			begin
-				uartcount= 18'h0;
+				uartcount= UART_TIME_RDELAY;
 				recclk = 0;
 			end
 			else
 			begin
 				
-				if(uartcount >= UART_TIME_RDELAY)
+				if(uartcount ==0)
 				begin
 					recclk = ~recclk;
-					uartcount = 18'h0;
+					uartcount = UART_TIME_RDELAY;
 				end
 				else
-					uartcount = uartcount+18'b1;
+					uartcount = uartcount-18'b1;
 			end
 			last_din = din;
 		end
@@ -80,26 +82,28 @@ module uart(input wire sclk,
 	always @(posedge recclk,posedge ss,negedge reset)
 	begin
 		if(~reset)
-			sendcount = 4'h9;
+			sendcount = 4'd10;
 		else
 			if(ss) 
 				sendcount=0;
 			else
-			if(sendcount != 4'h9)
+			if(sendcount != 4'd10)
 				sendcount = sendcount+4'h1;
+			else
+				sendcount = 4'd10;
 	end
 	
 	
 	always @(posedge ss,negedge reset)
 	begin
 		if(~reset)
-			shiftout = 10'b1111111111;
+			shiftout = 11'b11111111111;
 		else
-			shiftout = {1'b1,data,1'b0};
+			shiftout = {1'b1,data,2'b01};
 	end
 	
 	assign dout = shiftout[sendcount];
-	assign busy = sendcount != 4'h9;
+	assign busy = sendcount != 4'd10;
 	
 	
 
