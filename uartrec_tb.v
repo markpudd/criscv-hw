@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module uart_testbench;
+module uartrec_testbench;
 
 
 	reg clk;
@@ -31,18 +31,43 @@ module uart_testbench;
 		begin
 		$dumpfile ("uart.vcd");
 
-		reset =1;
-		#200000
+		din = 1;
 		reset =0;
 		#200000
 		reset =1;
 		#100000
-		ss =1;
-		data = 8'h23;
-		#20
-		ss=0;
+		
+		// idle
+		din = 1;
+		#104000
+		
+		
+		//Start bit
+		din = 0;
+		#104000
+		
+		
+		din = 0;
+		#104000
+		din = 0;
+		#104000
+		din = 0;
+		#104000
+		din = 1;
+		#104000
+		din = 0;
+		#104000
+		din = 0;
+		#104000
+		din = 1;
+		#104000
+		din = 0;
+		#104000
+		din = 1;
 
-
+		
+		
+		
 		
 		
 		
