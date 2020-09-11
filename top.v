@@ -1,6 +1,6 @@
 module top(input  mclk,
 			  input  reset,
-				output wire port,
+				output wire [3:0]port,
 				output wire sout,
 				output wire led,
 				input sin,
@@ -38,8 +38,7 @@ module top(input  mclk,
 		// PLL to clock mem correctly
 	mem_clock memclk (
 					.inclk0(mclk),
-					.c0(dram_clk),
-					.c1(dram_clkp));
+					.c0(dram_clk));
 	
 //	assign dram_clk = mclk;
 	
@@ -86,7 +85,7 @@ module top(input  mclk,
 										.data_valid(drec));
 															
 	 
-	 sdram sdram(.clk(dram_clkp),
+	 sdramnew sdramnew(.clk(mclk),
 										.reset(reset),
 										.address(address),
 										.rw_req(rw_req),
