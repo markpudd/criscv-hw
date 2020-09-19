@@ -36,11 +36,11 @@ Using a 50Mhz clock this will take between 10-20 clock cycle per instruction mai
 
 ## Running a binary
 
-You can run a binary built with the RISC-V gcc toolchain (and newlib).   At the moment this is built in when you create the core so is a bit of a convoluted process.
+You can run a binary built with the RISC-V gcc toolchain (and newlib).   At the moment this is built in when you create the core so is a bit of a convoluted process, booloader will be added soon.
 
 Build with
 
-          - /opt/riscv/bin/riscv32-unknown-elf-gcc -ffreestanding -pedantic -nostartfiles -Wl,-N -Wall test.c
+          - /opt/riscv/bin/riscv32-unknown-elf-gcc -ffreestanding -pedantic -nostartfiles  --specs=nosys.specs --specs=nano.specs -Wl,-N -Wall test.c
 
 This will build a binary with no start up code (so just the raw code for main and any other function you have).  It will also disable paging so the .sdata section will be located directly after .text section.   You will get a warning saying that there is no entry function.  To get code running in the short term you will need to set the pc on start-up.   Get the address of main by running:-
 
