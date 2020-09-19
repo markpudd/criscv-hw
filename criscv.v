@@ -1,6 +1,7 @@
 module criscv(input  mclk,
 					input  reset,
 					output reg led,
+					output reg crash,
 					output reg [31:0] mem_address,
 					output reg mem_rw_req,
 				   output reg mem_rw,
@@ -86,13 +87,45 @@ module criscv(input  mclk,
 		state=0;
 		alu_clk =0;
 	end
-
+	
+	// Begin code to monitor PC, if it doesn't change crash
+	reg [31:0]old_pc;
+	reg [9:0] count;
+	localparam CRASH_DELAY= 10'd512; 	
+	
+	always @ ( posedge mclk) begin
+		if(~reset)
+		begin
+			count<=CRASH_DELAY;
+			crash<=0;
+		end
+		else
+		begin
+			if(old_pc != pc) 
+			begin
+				old_pc <= pc;
+				count<=CRASH_DELAY;
+				crash<=0;
+			end
+			else
+			begin
+				if(count==0)
+					crash<=1;
+				else
+					count<=count-10'd1;
+			end
+		end
+	end
+	
+	
 	
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <= 32'h000000C0;
+		pc <= 32'h000002a0;
+	//	pc <= 32'h000000C0;
 		regs[2] <= 32'h00000FFC;  //Stack intialization - To be replaced with bootloader
+		regs[3] <= 32'h00001800;  //gp intialization - To be replaced with bootloader
 		state <=5;
 		alu_clk <=0;
 		led <= 0;

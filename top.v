@@ -1,6 +1,7 @@
 module top(input  mclk,
 			  input  reset,
 				output wire [3:0]port,
+				output wire crash,
 				output wire sout,
 				output wire led,
 				input sin,
@@ -16,7 +17,6 @@ module top(input  mclk,
 				output wire dram_ba0,
 				output wire dram_ba1,
 				output wire mem_led,
-				output wire sd_led,
 				output wire per_led);
 
 					
@@ -49,20 +49,21 @@ module top(input  mclk,
 	
 	//assign port = pport;
 	
-	assign read_data = ~address[31]? (address<32'h30000 ?  mread_data : dread_data)
+	assign read_data = ~address[31]? (address<32'h10000 ?  mread_data : dread_data)
 										  :  pread_data;
 	
-	assign rec = ~address[31]? (address<32'h30000 ?  drec : sdrec)
+	assign rec = ~address[31]? (address<32'h10000 ?  drec : sdrec)
 										  :  prec;
 	//assign read_data = ~address[31]? mread_data :   pread_data;
 			
-	assign mem_led =drec;
-	assign sd_led = sdrec;
+	assign mem_led =drec |sdrec;
+	//assign sd_led = sdrec;
 	assign per_led =prec;
 					
 	criscv cpu(.mclk(mclk),
 				  .reset(reset),
 				  .led(led),
+				  .crash(crash),
 				  .mem_address(address),
 				  .mem_rw_req(rw_req),
 				  .mem_rw(rw),

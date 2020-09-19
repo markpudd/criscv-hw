@@ -9,8 +9,15 @@ module uart(input wire sclk,
 					input wire din,
 					input wire rr);
 
-	localparam UART_TIME_DELAY = 16'h1458; 						
-	localparam UART_TIME_RDELAY = 18'ha2c; 
+   // 9600
+//	localparam UART_TIME_DELAY = 16'h1458; 						
+//	localparam UART_TIME_RDELAY = 18'ha2c; 
+//	localparam UART_TIME_QDELAY = 18'h516; 
+
+	  // 38400
+	localparam UART_TIME_DELAY = 16'h1458/4; 						
+	localparam UART_TIME_RDELAY = 18'ha2c/4; 
+	localparam UART_TIME_QDELAY = 18'h516/4; 
 
 
 	
@@ -57,7 +64,7 @@ module uart(input wire sclk,
 			// Sync clock falling on edge
 			if(din & (last_din != din)) 
 			begin
-				uartcount= UART_TIME_RDELAY;
+				uartcount= UART_TIME_QDELAY;
 				recclk = 0;
 			end
 			else

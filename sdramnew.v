@@ -36,7 +36,7 @@ localparam 	 INITIAL = 4'd0,
 				 START=4'd12;
 				 
 localparam START_DELAY= 32'd5000; 				
-localparam CAS_DELAY= 32'd1;   				
+localparam CAS_DELAY= 32'd2;   				
 localparam BANK_DELAY= 32'd2; 		 
 localparam TRC_DELAY=32'd8;
 localparam TMRD_DELAY=32'd1;
@@ -76,30 +76,35 @@ wire [12:0] row_address;
 wire [12:0] column_address;
 wire odd;
 reg nop;
+reg du;
 
-assign column_address =  {3'b001,mem_address[10:1]};
-assign row_address =  {mem_address[23:11]};
-assign bank = mem_address[25:24];
+reg first;
+
+assign column_address =  {3'b0010,mem_address[9:1]};
+assign row_address =  {mem_address[22:10]};
+assign bank = mem_address[24:23];
 assign odd=mem_address[0];
 
 assign {dram_cs_n, dram_ras_n,dram_cas_n, dram_we_n}=  nop ? CMD_NOP:command;
+
 assign dram_addr = (command==CMD_PALL) ? CMD_PALL_ADD :
 						 (command==CMD_MRS)? MRS_CONFIG_ADD :
 						 (command==CMD_ACT)? row_address :
 						 column_address;
+						 
 assign {dram_ba0,dram_ba1} = (command==CMD_MRS || command ==CMD_PALL) ? 2'b00 :bank;
 
 assign dram_dqm = dqm;
 
 assign dq =  (isize==2'h0) ? ((odd==1) ? {8'h0,dout[7:0]}: {dout[7:0],8'h0})
 									: {dout[7:0],dout[15:8]};
-
+									
 assign dram_dq = (cState==WRITE_COL) ? dq : 16'bz;
 
-assign data_valid = (cState==DONE_RC && ~first);
+assign data_valid = (cState==DONE_RC && delay==0 && ~du);
 
-assign read_data =  (isize==2'h0) ? ((odd==1) ? {8'h0,din[7:0]}: {8'h0,din[15:8]})
-									: (isize==2'h1) ? {din[7:0],din[15:8]} : {din[7:0],din[15:8],din[23:16],din[31:24]}  ;
+assign read_data =  (isize==2'h0) ? ((odd==1) ? {24'h0,din[7:0]}: {24'h0,din[15:8]})
+									: (isize==2'h1) ? {16'h0,din[7:0],din[15:8]} : {din[23:16],din[31:24],din[7:0],din[15:8]}  ;
 									
 assign dqm =  (isize==2'h0 && cState==WRITE_COL ) ? ((odd==1) ? 2'b10 : 2'b01)
 								: 2'b00;
@@ -108,45 +113,67 @@ assign dqm =  (isize==2'h0 && cState==WRITE_COL ) ? ((odd==1) ? 2'b10 : 2'b01)
 assign dram_cke = 1'b1;
 assign dram_cs_n = 1'b0;	
 
-reg first;
+
+reg wc;
 		
 // Deal with request
 always@(posedge clk) begin
 	if(~reset)
 	begin
 		irw<=0;
-		first<=0;
+		irwq <=  0;
+		du <=0;
 	end
 	else
 	begin
-		irwq =  0;
-		if(rw_req==1 && address>= 32'h30000 && ~address[31])
+		if(cState==ROW_ACTIVE) irwq <= 0;
+		if(~du && cState==IDLE && rw_req==1 && address>= 32'h10000 && ~address[31])
 		begin
-			mem_address = (address-32'h30000);
-		//	irwq<=1;
-			isize = size;
-			irw = rw;
-			irwq = 1;
-			if(isize == 2'h2) first = 1;
-		end
+			mem_address = (address-32'h10000);
+			isize <= size;
+			irw <= rw;
+			irwq <= 1;
+			if(size == 2'h2)
+			begin
+			mem_address = mem_address+2;
+				first <= 1;
+				du <=1;
+			end
+		end 
 		if(first && cState==DONE_RC) 
 		begin
-			mem_address = mem_address+2;
-			irwq = 1;
-			first = 0;
+			mem_address = mem_address-2;
+			irwq <= 1;
+			first <= 0;
+		end
+		if(~first && du && cState==ROW_ACTIVE) 
+		begin
+			du <=0;
 		end
 	end
 	
 end
 
+// Lets read right in the middle to avoid timing issues
+always@(posedge clk) begin 
+		if(cState == READ_COL && delay ==CAS_DELAY) 
+		begin
+			if(first) din[31:16] <=dram_dq ;
+			else din[15:0] <=dram_dq ;
+		end
+end
+
+always@(posedge clk) begin 
+		if(cState == ROW_ACTIVE && ~first) dout <= write_data[15:0];
+		if(cState == ROW_ACTIVE && first) dout <= write_data[31:16];
+end
 
 always@(posedge clk) begin
 	if(~reset)
 	begin
-		cState <= START;
-		delay<=0;
-		nop<=1;
-		//dtarget<=0;
+		cState = START;
+		delay=0;
+		nop=1;
 	end
 	else
 		if(delay == dtarget) begin
@@ -161,15 +188,10 @@ always@(posedge clk) begin
 end
 
 
-always@(posedge clk) begin 
-		if(nState == DONE_RC && (delay ==CAS_DELAY))
-		   if(first) din[31:16] <=dram_dq;
-			else  din[15:0] <=dram_dq ;
-		if(nState == ROW_ACTIVE) dout <= write_data[15:0];
-end
 
 always@ ( * ) begin
 	 dtarget = 0;
+	 
 	 case(cState)
 
 		 START: begin
@@ -242,7 +264,9 @@ always@ ( * ) begin
 						else dtarget =TRC_DELAY-CAS_DELAY;
 						nState = IDLE;
 					end
-	endcase			
+	endcase	
+	if(nop)
+		command=CMD_NOP;
 end
 
 endmodule

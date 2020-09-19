@@ -21,7 +21,7 @@ module memory_cont(input clk,
 
 	reg reading;
 
-	localparam MEMORY_DELAY = 3'h2; 
+	localparam MEMORY_DELAY = 3'd2; 
 
 	reg [31:0] i_address;
 	reg i_rw;
@@ -33,10 +33,18 @@ module memory_cont(input clk,
 	
 	reg [1:0] be= 2'b11;	
 	reg [11:0]  br_address= 12'h00000000;
+	//wire [11:0]  ir_address;
+	//wire [31:0]  sd_address;
 	reg [15:0] br_data;
 	reg	  		 br_rden= 1'b0;
 	reg	  		 br_wren= 1'b0;
+	//wire    	  	 sd_rden;
+	//wire	  		 sd_wren;
+	//wire	    	 bi_rden;
+	//wire	  		 bi_wren;
 	wire [15:0] br_q;
+	//wire [15:0] bi_q;
+	//wire [15:0] bsd_q;
 	
 	
 	ram ram(.address(br_address),
@@ -47,12 +55,28 @@ module memory_cont(input clk,
 				.wren(br_wren),
 				.q(br_q));
 
+
+				
+				
 	reg [2:0] mc_state=3'h0;
 	reg [2:0] delay=0;
 
 	assign data_valid = i_data_valid;
 	assign read_data = i_read_data_f;		
+	/*
+	assign bi_rden = address<32'h2FFFF ?  br_rden :1'b0;
+	assign sd_rden = address>=32'h2FFFF ?  br_rden :1'b0;
+
+
+	assign bi_wren = address<32'h2FFFF ?  br_wren :1'b0;
+	assign sd_wren = address>=32'h2FFFF ?  br_wren :1'b0;
+
+		
+	assign br_q = address<32'h2FFFF ?  bi_q :bsd_q ;		
 	
+	
+	assign ir_address = br_address[11:0];
+	assign sd_address = br_address[30:0] - 31'h1FFFF;*/
 	
 	always @ ( posedge clk) begin
 		if(~reset)
@@ -67,12 +91,13 @@ module memory_cont(input clk,
 			delay <=0;
 		end
 		else
-		if(~address[31])
+		if(address[31]==0 && address < 32'h10000 )
 		case(mc_state)
 			3'h0: begin   // 
 					i_data_valid <= 0;
 					if(rw_req)
 						begin
+										
 							i_address <= address;					
 							// read first word
 							i_size <= size;
@@ -207,6 +232,7 @@ module memory_cont(input clk,
 							else
 							begin
 								i_read_data[7:0] <= br_q[7:0];
+
 							end		
 						else
 						begin
@@ -237,10 +263,11 @@ module memory_cont(input clk,
 							i_read_data_f <= {i_read_data[7:0],
 													i_read_data[15:8]};					
 						if(i_size == 2'h0)
-							i_read_data_f <= i_read_data[7:0];					
+							i_read_data_f <= {24'h0,i_read_data[7:0]};					
 						i_data_valid <= 1;
 						br_rden <= 1'b0;
 						br_wren <= 1'b0;	
+						be = 2'b11;
 						mc_state = 3'h7;
 					end		
 			3'h7: begin 	 // read pt1
