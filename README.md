@@ -1,10 +1,10 @@
 # Synthesizable RISC-V verilog
 
-This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  The fn.hex file is a basic Hello World which sends Hello World out on sout (9600 with 50Mhz clock) and blinks port.
+This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
 ## SDRAM and UART
 
-There is now some basic support for SDRAM and UART.  Both are pretty simple and buggy (especially the SDRAM) at the moment.  Its likely the SDRAM will get converted into page read/right and a cache which will be simpler and more performant.
+There basic support for SDRAM and UART.  Both are pretty simple and buggy (especially the SDRAM) at the moment.  Its likely the SDRAM will get converted into page read/right and a cache which will be simpler and more performant.
 
 
 ## How to get it running
@@ -27,34 +27,23 @@ Steps to get it running using Quartus:-
   -  Import RAM initialisation file (boot.hex)
   -  Setup CLK input, RESET input (on a button) and an output (which is mapped to 0xffffff00)
   -  Build and program onto an FPGA.  On the DE0-Nano it uses 3192 logic elements (about 14% capacity)
+  -  Hook up SDRAM and serial
+  -  Optionally connect port/crash/status leds.
 
-Once started reset will need to be set low then high to get things running. To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and pointed too for ram initialisation (covert.py coming to do this for you).
+Once started reset will need to be set low then high to get things running. To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and the uploaded via the bootloader.  An example build command for c is:-
+
+   - /opt/riscv/bin/riscv32-unknown-elf-gcc  -ffreestanding  --specs=nosys.specs --specs=nano.specs -Wl,-N  -g print.c
+
+In the bootloader directory there is a basic IO file so you can get things like printf running.
 
 ## Performance
 
-Using a 50Mhz clock this will take between 10-20 clock cycle per instruction mainly due to memory access , which could be optimised.   A PLL can be used to increase the internal clock speed and accelerate this.
+The memory performance is currently pretty bad, especially for SDRAM.   The current model burst 1 16-bit word from SDRAM and closes the row at a time.  This results in arroud 20 clock cycles for an instruction read (so 4~400ns per instruction).  Its high on the list top switch to paged RAM with caching which should result in a major speed increase.   
 
-## Running a binary
+If SDRAM is not needed then its possible to use a linker script to locate code in normal RAM which will allow the whole system to be internaly clocked at 400+Mhz using a PLL.
 
-You can run a binary built with the RISC-V gcc toolchain (and newlib).   At the moment this is built in when you create the core so is a bit of a convoluted process, booloader will be added soon.
 
-Build with
 
-          - /opt/riscv/bin/riscv32-unknown-elf-gcc -ffreestanding -pedantic -nostartfiles  --specs=nosys.specs --specs=nano.specs -Wl,-N -Wall test.c
-
-This will build a binary with no start up code (so just the raw code for main and any other function you have).  It will also disable paging so the .sdata section will be located directly after .text section.   You will get a warning saying that there is no entry function.  To get code running in the short term you will need to set the pc on start-up.   Get the address of main by running:-
-
-          - /opt/riscv/riscv32-unknown-elf/bin/readelf -s a.out
-
-And noting down the address of main.  You will need to set the pc in crisc.v were reset is checked (around line 120).
-
-The next step is to convert the elf binary to hex with bintohex.py (this also currently change endianist which will change in a future revision).
-
-          - python bintohex.py a.out > boot.hex
-
-Finally copy the hex file and add to your Quartus project, then in the MegaFunction verilog set the init_file to the hex file you've copied across.
-
-There is no memory overwrite protection or checking of sizes.   You will also potentially have to change the stack address in reset if you have configured a different amount of RAM.
 
 ## TODO
 
