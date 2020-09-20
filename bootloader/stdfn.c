@@ -2,11 +2,6 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
-void setled(char led_state) {
-char * led = (char *)0xffffff00;
-  led[0] = led_state;
-}
-
 
 int _write (int fd, char *buf, int count) {
   char * uart = (char *)0xffffff01;
