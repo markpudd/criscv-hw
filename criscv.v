@@ -101,6 +101,7 @@ module criscv(input  mclk,
 		end
 		else
 		begin
+		if(delay == 0)
 			if(old_pc != pc) 
 			begin
 				old_pc <= pc;
@@ -109,7 +110,7 @@ module criscv(input  mclk,
 			end
 			else
 			begin
-				if(count==0)
+				if(count==0 )
 					crash<=1;
 				else
 					count<=count-10'd1;
@@ -122,10 +123,11 @@ module criscv(input  mclk,
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <= 32'h000002a0;
+		pc <=0;
+	//	pc <= 32'h000002a0;
 	//	pc <= 32'h000000C0;
-		regs[2] <= 32'h00000FFC;  //Stack intialization - To be replaced with bootloader
-		regs[3] <= 32'h00001800;  //gp intialization - To be replaced with bootloader
+		regs[2] <= 32'h00001FFC;  //Stack intialization - To be replaced with bootloader
+	//	regs[3] <= 32'h00001800;  //gp intialization - To be replaced with bootloader
 		state <=5;
 		alu_clk <=0;
 		led <= 0;
@@ -137,11 +139,24 @@ module criscv(input  mclk,
 	case(state)
 		3'h5:  begin   // Start delay (SDRAM)
 				if(delay == 0)
-					state <= 3'h0;
+					state <= 3'h6;
 				else
 					delay = delay-1;
-		
 				end
+		3'h6: begin // Fetch entry address
+				mem_address <= 32'h00000018; 
+				mem_rw <= 0;        // read
+				mem_rw_req <= 1;
+				state <= 3'h7;
+				end
+		3'h7: begin 
+					if(mem_rec)
+					begin
+						pc <=mem_read_data; 
+						mem_rw_req <= 0;
+						state <= 3'h0;
+					end
+				end		
 		3'h0: begin   // Fetch instruction
 				if(alu_clk && rd_index !=0)
 					regs[rd_index] <= rd;
