@@ -38,7 +38,8 @@ module top(input  mclk,
 		// PLL to clock mem correctly
 	mem_clock memclk (
 					.inclk0(mclk),
-					.c0(dram_clk));
+					.c0(dram_clk),
+					.c1(cache_clk));
 	
 //	assign dram_clk = mclk;
 	
@@ -73,7 +74,32 @@ module top(input  mclk,
 				  .mem_rec(rec));
 				  
 		  
-				  
+
+
+mmu mmu(.clk(mclk),
+				.mclk(dram_clk),
+				.cclk(mclk),
+				.reset(reset),
+										.address(address),
+										.rw_req(rw_req),
+										.rw(rw),
+										.write_data(write_data),
+										.size(size),
+										.read_data(dread_data),
+										.data_valid(sdrec),
+						 
+						 
+					.dram_dq(dram_dq),
+					.dram_addr(dram_addr),
+					.dram_dqm(dram_dqm),
+					.dram_cke(dram_cke),
+					.dram_we_n(dram_we_n),
+					.dram_cas_n(dram_cas_n),
+					.dram_ras_n(dram_ras_n),
+					.dram_cs_n(dram_cs_n),
+					.dram_ba0(dram_ba0),
+					.dram_ba1(dram_ba1));
+		  
 	
 	memory_cont memory_cont( 	.clk(mclk),
 										.reset(reset),
@@ -85,7 +111,7 @@ module top(input  mclk,
 										.read_data(mread_data),
 										.data_valid(drec));
 															
-	 
+	 /*
 	 sdramnew sdramnew(.clk(mclk),
 										.reset(reset),
 										.address(address),
@@ -106,7 +132,7 @@ module top(input  mclk,
 					.dram_ras_n(dram_ras_n),
 					.dram_cs_n(dram_cs_n),
 					.dram_ba0(dram_ba0),
-					.dram_ba1(dram_ba1));
+					.dram_ba1(dram_ba1));*/
 	
 	 peripherals	 peripherals(.clk(mclk),
 										.reset(reset),				 

@@ -15,9 +15,9 @@ module uart(input wire sclk,
 //	localparam UART_TIME_QDELAY = 18'h516; 
 
 	  // 38400
-	localparam UART_TIME_DELAY = 16'h1458/4; 						
-	localparam UART_TIME_RDELAY = 18'ha2c/4; 
-	localparam UART_TIME_QDELAY = 18'h516/4; 
+	localparam UART_TIME_DELAY = 16'h1458/6; 						
+	localparam UART_TIME_RDELAY = 18'ha2c/6; 
+	localparam UART_TIME_QDELAY = 18'h516/6; 
 
 
 	
@@ -121,7 +121,7 @@ module uart(input wire sclk,
 	begin
 		if(~reset)
 		begin
-			shiftin = 9'h0;
+			shiftin <= 9'h0;
 			reccount= 0;
 		end
 		else
@@ -130,7 +130,7 @@ module uart(input wire sclk,
 				i_rec_valid=0;
 			else
 			begin
-				shiftin = {din,shiftin[9:1]};
+				shiftin <= {din,shiftin[9:1]};
 				if(reccount == 9) 
 				begin
 					if(shiftin[9] & ~shiftin[0])

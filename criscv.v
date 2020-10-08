@@ -91,7 +91,7 @@ module criscv(input  mclk,
 	// Begin code to monitor PC, if it doesn't change crash
 	reg [31:0]old_pc;
 	reg [9:0] count;
-	localparam CRASH_DELAY= 10'd512; 	
+	localparam CRASH_DELAY= 10'd256; 	
 	
 	always @ ( posedge mclk) begin
 		if(~reset)
@@ -123,7 +123,7 @@ module criscv(input  mclk,
 	always @ ( posedge mclk) begin
 	if(~reset)
 	begin
-		pc <=0;
+		pc <=32'h0;
 	//	pc <= 32'h000002a0;
 	//	pc <= 32'h000000C0;
 		regs[2] <= 32'h00001FFC;  //Stack intialization - To be replaced with bootloader
