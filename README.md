@@ -2,10 +2,23 @@
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
-## SDRAM and UART
+## MMU
 
-There basic support for SDRAM and UART.  Both are pretty simple and buggy (especially the SDRAM) at the moment.  Its likely the SDRAM will get converted into page read/right and a cache which will be simpler and more performant.
+There is some basic code for sdram and caching.   The following is what is available:-
 
+    - memory_cont.v - Basic memory access for on board RAM
+    - sdram.v - Basic SDRAM access
+    - mmu.v - Basic cached memory using onboard RAM and SDRAM 
+    
+By default the SDRAM as any address over 0x10000 (otherwise onboard).  The MMU is used for SDRAM caching, it is a direct mapped cahce (2-way associative is coming).  There is still a bunch of optimazation coming for the cahce which should drop the cache hit access time to 1-2 cycles.
+
+## UART
+
+There a basic UART which can be used to upload code.  
+
+## Bootloader
+
+There is a basic binary bootloader (booloader2.c).  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 57600.   The code will be loaded at 10000 and use SDRAM (with cach infront).
 
 ## How to get it running
 
@@ -32,17 +45,15 @@ Steps to get it running using Quartus:-
 
 Once started reset will need to be set low then high to get things running. To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and the uploaded via the bootloader.  An example build command for c is:-
 
-   - /opt/riscv/bin/riscv32-unknown-elf-gcc  -ffreestanding  --specs=nosys.specs --specs=nano.specs -Wl,-N  -g print.c
+   - /opt/riscv/bin/riscv32-unknown-elf-gcc  -ffreestanding  --specs=nano.specs -Wl,-N  -g stdfn.c print.c
 
 In the bootloader directory there is a basic IO file so you can get things like printf running.
 
-## Performance
+## Performance /  Memory
 
-The memory performance is currently pretty bad, especially for SDRAM.   The current model burst 1 16-bit word from SDRAM and closes the row at a time.  This results in arroud 20 clock cycles for an instruction read (so 4~400ns per instruction).  Its high on the list top switch to paged RAM with caching which should result in a major speed increase.   
+The memory performance is still not optimize.  Using the MMU SDRAM will be cached, but there is a still a bit of work to do to reduce cachce access clock cycles.
 
-If SDRAM is not needed then its possible to use a linker script to locate code in normal RAM which will allow the whole system to be internaly clocked at 400+Mhz using a PLL.
-
-
+The memory_cont.v is still used to access memory under 0x10000, however this will likely change so that all access will go through MMU.   Stack is currently always located a 0x1ffc.
 
 
 ## TODO
@@ -50,9 +61,9 @@ If SDRAM is not needed then its possible to use a linker script to locate code i
 Few thing likely to:-
 
     - Add some pipelineing and rewrite all the memory verilog  
-    - Add SDRAM to memory controller
     - Create a proper memory layout
-    - Add EBREAK/ECALL and FENCE implementations (currently do nothing)
+    - Add EBREAK/ECALL and FENCE implementations (short term link stdfn.c and build code with --specs=nano.specs)
     - Add some more peripherals
     - Build on a different FPGA (Have a Lattice board so may try that)
-    - As only 14% of capacity used may be worth trying to build a dual core version......
+    - Dual core
+    - Buffering and SW config in UART
