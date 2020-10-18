@@ -20,6 +20,8 @@ There a basic UART which can be used to upload code.
 
 There is a basic binary bootloader (booloader2.c).  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 57600.   The code will be loaded at 10000 and use SDRAM (with cach infront).
 
+There is basic ECALL supprot now so it would be possible wto implement things like write as part of the bootloader code which would allow linking with sys for various standard functions.
+
 ## How to get it running
 
 This is a simple 3 state FSM (Fetch, decode, execute), with an extra state for memory commands (load and store), not everything has been tested so there is likely issues with some commands.
