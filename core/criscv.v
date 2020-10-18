@@ -12,6 +12,27 @@ module criscv(input  mclk,
 
 
 	localparam START_DELAY= 32'd501000; 		
+	
+	
+	//  Machine CSR offsets
+	localparam MTS_BASE     = 12'h300;
+	localparam MSTATUS  	 	= 12'h0; 		
+	localparam MISA      	= 12'h1; 		
+	localparam MEDELEG   	= 12'h2; 		
+	localparam MIDELEG   	= 12'h3; 		
+	localparam MIE   			= 12'h4; 		
+	localparam MTVEC   		= 12'h5; 		
+	localparam MCOUNTEREN   = 12'h6; 		
+
+	
+	localparam MTH_BASE     = 12'h340;
+	localparam MSCRATCH  	= 12'h0; 		
+	localparam MEPC      	= 12'h1; 		
+	localparam MCAUSE   		= 12'h2; 		
+	localparam MTVAL   		= 12'h3; 		
+	localparam MIP   			= 12'h4; 		
+
+	
 	reg [31:0] delay;
 	
 	
@@ -30,42 +51,29 @@ module criscv(input  mclk,
 	reg [5:0] rd_index;
 	
    wire  [31:0] rd;
-	/*
-	reg led;
-	 reg [31:0] mem_address;
-	 reg mem_rw_req;
-	 reg  mem_rw;
-	 reg[31:0] mem_write_data;
-	 reg[1:0] mem_size;
-	*/
+
 	
 	reg [31:0]  pc= 32'h000000c0;
 	reg [31:0]  inst;
 	reg [31:0]  regs [31:0] ;
-	reg [2:0]   state =0;
+	reg [3:0]   state =0;
 
 
+	reg [11:0] csr;
+	wire [31:0] mpx_csr;
+	reg [4:0] uimm;
+	// CSR Registers to allow for traps, exception and interupts
+	reg [31:0]  machine_trap_setup_regs [7:0] ;
+	reg [31:0]  machine_trap_handling_regs [5:0] ;
+
+
+	assign mpx_csr = (csr[11:8] != 4'h3) ? 0 :
+						 (csr[7:4] == 4'h0) ?  machine_trap_setup_regs[csr[3:0]] :
+						 (csr[7:4] == 4'h3) ?  machine_trap_handling_regs[csr[3:0]] :
+						 0;
+		
 	wire alu_comp;
 
-	/*
-	wire mem_rec;
-	reg [31:0] mem_address;
-	reg mem_rw_req;
-	reg mem_rw;
-	reg [31:0] mem_write_data;
-	reg [1:0] mem_size;
-	wire [31:0] mem_read_data;
-		 memory_cont memory_cont( 	.clk(mclk),
-										.reset(reset),
-										.port(port),
-									   .sout(sout),
-										.address(mem_address),
-										.rw_req(mem_rw_req),
-										.rw(mem_rw),
-										.write_data(mem_write_data),
-										.size(mem_size),
-										.read_data(mem_read_data),
-										.data_valid(mem_rec));*/
 
 
 	
@@ -137,19 +145,19 @@ module criscv(input  mclk,
 	begin
 	led <= 1;
 	case(state)
-		3'h5:  begin   // Start delay (SDRAM)
+		4'h5:  begin   // Start delay (SDRAM)
 				if(delay == 0)
 					state <= 3'h6;
 				else
 					delay = delay-1;
 				end
-		3'h6: begin // Fetch entry address
+		4'h6: begin // Fetch entry address
 				mem_address <= 32'h00000018; 
 				mem_rw <= 0;        // read
 				mem_rw_req <= 1;
 				state <= 3'h7;
 				end
-		3'h7: begin 
+		4'h7: begin 
 					if(mem_rec)
 					begin
 						pc <=mem_read_data; 
@@ -157,7 +165,7 @@ module criscv(input  mclk,
 						state <= 3'h0;
 					end
 				end		
-		3'h0: begin   // Fetch instruction
+		4'h0: begin   // Fetch instruction
 				if(alu_clk && rd_index !=0)
 					regs[rd_index] <= rd;
 				alu_clk <=0;
@@ -168,7 +176,7 @@ module criscv(input  mclk,
 				state <= 3'h1;
 				end
 				
-		3'h1: begin  // decode  - This could be optimied to continual assignment but this keeps timing simple
+		4'h1: begin  // decode  - This could be optimied to continual assignment but this keeps timing simple
 					if(mem_rec)
 					begin
 						imm_i =  $signed(mem_read_data[31:20]);
@@ -182,6 +190,8 @@ module criscv(input  mclk,
 						imm_j = $signed({mem_read_data[31],  mem_read_data[19:12], mem_read_data[20], mem_read_data[30:21] ,1'b0 });
 						imm_u = mem_read_data & 32'hFFFFF000;
 						opcode = mem_read_data[6:0];
+							uimm = mem_read_data[19:15];
+						csr = mem_read_data[31:20];
 						if(mem_read_data[19:15] == 0)
 							rs1 <= 0;
 						else
@@ -194,7 +204,7 @@ module criscv(input  mclk,
 						state <= 3'h2;
 					end
 				end
-		3'h2: begin   // EXECUTE
+		4'h2: begin   // EXECUTE
 					casex (opcode)
 						 7'b0x10011 :  // ALU
 							begin
@@ -324,17 +334,82 @@ module criscv(input  mclk,
 								pc <= pc + 4;
 							   state <= 3'h0;	
 							end
-					7'b1110011 :  // ECALL/EBREAK
-							begin
-							end								
 					7'b0001111 :  // FENCE
 							begin
+							end									
+					7'b1110011 :  // SYSYTEM
+							begin
+								case (funct3)
+										3'b000 : begin     // ECALL/EBREAK
+													if(imm_i == 0)
+													begin
+															machine_trap_handling_regs[MEPC] <= pc+4;
+															mem_address <= machine_trap_setup_regs[MTVEC] + (11*4); // LW
+															mem_size <= 2;
+															mem_rw <= 0;
+															mem_rw_req<= 1;
+															state <= 4'h8;	
+														// MPIE -set
+														// MEPC - code 11
+													end
+													else
+													begin   // (USM)RET
+														// TODO check it MRET
+														pc <= machine_trap_handling_regs[MEPC];
+													//	pc <= pc+4;
+														state <= 3'h0;
+													end
+													end
+										3'b001 : begin  // CSRRW
+													//read CRS
+													regs[rd_index] = mpx_csr;	
+													//  This is a bit rubish
+													if(csr[11:8] == 4'h3)
+													begin
+														if(csr[7:4] == 4'h0) machine_trap_setup_regs[csr[3:0]]  <= rs1;
+														if(csr[7:4] == 4'h3) machine_trap_handling_regs[csr[3:0]]  <= rs1;
+													end
+													pc <= pc+4;
+													state <= 3'h0;
+													end
+										3'b010 : begin  // CSRRS
+													regs[rd_index] = mpx_csr | rs1;
+													pc <= pc+4;
+													state <= 3'h0;
+													end
+										3'b011 : begin  // CSRRC
+													regs[rd_index] = mpx_csr & ~rs1;
+													pc <= pc+4;		
+													state <= 3'h0;
+													end
+										3'b101 : begin  // CSRRWI
+													regs[rd_index] = mpx_csr;	
+													//  This is a bit rubish
+													if(csr[11:8] == 4'h3)
+													begin
+														if(csr[7:4] == 4'h0) machine_trap_setup_regs[csr[3:0]]  <= uimm;
+														if(csr[7:4] == 4'h3) machine_trap_handling_regs[csr[3:0]]  <= uimm;
+													end
+													pc <= pc+4;
+													state <= 3'h0;
+													end
+										3'b110 : begin  // CSRRSI
+													regs[rd_index] = mpx_csr | uimm;
+													pc <= pc+4;
+													state <= 3'h0;
+													end
+										3'b111 : begin  // CSRRCI
+													regs[rd_index] = mpx_csr & ~uimm;
+													pc <= pc+4;
+													state <= 3'h0;
+													end
+								endcase
 							end								
 							
 					endcase
 
 				end
-		3'h3: begin   // Load Complete
+		4'h3: begin   // Load Complete
 				if(mem_rec)
 				begin
 					if(funct3== 3'b000)
@@ -352,7 +427,7 @@ module criscv(input  mclk,
 					state <= 3'h0;
 				end	  
 			end
-		 3'h4: begin   // save Complete
+		 4'h4: begin   // save Complete
 		 		if(mem_rec)
 				begin
 						pc <= pc + 4;
@@ -360,6 +435,14 @@ module criscv(input  mclk,
 						state <= 3'h0;	  
 				end	
 				end	
+		 4'h8: begin   // Ecall mem fetched Complete
+		 		if(mem_rec)
+				begin
+						pc <= mem_read_data;
+						state <= 3'h0;	  
+				end	
+				end	
+								
 		endcase
 		end
 	end
