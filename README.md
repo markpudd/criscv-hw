@@ -2,6 +2,9 @@
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
+The clock is expected to be 50Mhz at the moment and this is doubled using a PLL.  The clock is slowed for SDRAM access at the testboard used to develop has a 50HZ clock and only supports this externally.  
+
+
 ## MMU
 
 There is some basic code for sdram and caching.   The following is what is available:-
@@ -18,9 +21,9 @@ There a basic UART which can be used to upload code.
 
 ## Bootloader
 
-There is a basic binary bootloader (booloader2.c).  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 57600.   The code will be loaded at 10000 and use SDRAM (with cach infront).
+There is a basic binary bootloader.  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 230400.   The code will be loaded at 10000 and use SDRAM (with cach infront).
 
-There is basic ECALL supprot now so it would be possible wto implement things like write as part of the bootloader code which would allow linking with sys for various standard functions.
+There is basic ECALL support.   The bootloader has some basic system call implementations so code can execute some system functions.
 
 ## How to get it running
 
@@ -47,9 +50,8 @@ Steps to get it running using Quartus:-
 
 Once started reset will need to be set low then high to get things running. To build some code to run the easiest thing to do to test is write some simple RISC-V assembler and compile with the RISC-V toolchain.  The binary can then be converted to a .hex file and the uploaded via the bootloader.  An example build command for c is:-
 
-   - /opt/riscv/bin/riscv32-unknown-elf-gcc  -ffreestanding  --specs=nano.specs -Wl,-N  -g stdfn.c print.c
+   - /opt/riscv/bin/riscv32-unknown-elf-gcc  -ffreestanding  --specs=nano.specs -Wl,-N  -g print.c
 
-In the bootloader directory there is a basic IO file so you can get things like printf running.
 
 ## Performance /  Memory
 
