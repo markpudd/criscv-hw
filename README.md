@@ -44,7 +44,7 @@ Steps to get it running using Quartus:-
   -  Create RAM: 1-Port with 16-bit with and whatever amount of memory you want (as above)
   -  Import RAM initialisation file (boot.hex)
   -  Setup CLK input, RESET input (on a button) and an output (which is mapped to 0xffffff00)
-  -  Build and program onto an FPGA.  On the DE0-Nano it uses 3192 logic elements (about 14% capacity)
+  -  Build and program onto an FPGA.  On the DE0-Nano it uses 9154 elements with UART and MMU.
   -  Hook up SDRAM and serial
   -  Optionally connect port/crash/status leds.
 
