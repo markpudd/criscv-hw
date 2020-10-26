@@ -31,7 +31,7 @@ module top(input  mclk,
 	wire [31:0] pread_data;
 	wire [31:0] dread_data;
 	wire  rec;
-	wire drec;
+//	wire drec;
 	wire sdrec;
 	wire prec;
 	wire dram_clkp;
@@ -49,19 +49,25 @@ module top(input  mclk,
 	//assign rec = drec | prec; // |sdrec;
 	
 	//assign port = pport;
-	
+	/*
 	assign read_data = ~address[31]? (address<32'h10000 ?  mread_data : dread_data)
 										  :  pread_data;
 	
 	assign rec = ~address[31]? (address<32'h10000 ?  drec : sdrec)
-										  :  prec;
+										  :  prec;*/
+										  
+										  
 	//assign read_data = ~address[31]? mread_data :   pread_data;
 			
-	assign mem_led =drec |sdrec;
+	assign read_data = ~address[31]? dread_data :  pread_data;
+	
+	assign rec = ~address[31]?  sdrec:  prec;
+										  
+	assign mem_led =sdrec;
 	//assign sd_led = sdrec;
 	assign per_led =prec;
 					
-	criscv cpu(.mclk(mclk),
+	criscv cpu(.mclk(cache_clk),
 				  .reset(reset),
 				  .led(led),
 				  .crash(crash),
@@ -76,7 +82,7 @@ module top(input  mclk,
 		  
 
 
-mmu mmu(.clk(mclk),
+mmu mmu(.clk(cache_clk),
 				.mclk(dram_clk),
 				.cclk(mclk),
 				.reset(reset),
@@ -100,41 +106,9 @@ mmu mmu(.clk(mclk),
 					.dram_ba0(dram_ba0),
 					.dram_ba1(dram_ba1));
 		  
+
 	
-	memory_cont memory_cont( 	.clk(mclk),
-										.reset(reset),
-										.address(address),
-										.rw_req(rw_req),
-										.rw(rw),
-										.write_data(write_data),
-										.size(size),
-										.read_data(mread_data),
-										.data_valid(drec));
-															
-	 /*
-	 sdramnew sdramnew(.clk(mclk),
-										.reset(reset),
-										.address(address),
-										.rw_req(rw_req),
-										.rw(rw),
-										.write_data(write_data),
-										.size(size),
-										.read_data(dread_data),
-										.data_valid(sdrec),
-					
-					.mclk(dram_clk),
-					.dram_dq(dram_dq),
-					.dram_addr(dram_addr),
-					.dram_dqm(dram_dqm),
-					.dram_cke(dram_cke),
-					.dram_we_n(dram_we_n),
-					.dram_cas_n(dram_cas_n),
-					.dram_ras_n(dram_ras_n),
-					.dram_cs_n(dram_cs_n),
-					.dram_ba0(dram_ba0),
-					.dram_ba1(dram_ba1));*/
-	
-	 peripherals	 peripherals(.clk(mclk),
+	 peripherals	 peripherals(.clk(cache_clk),
 										.reset(reset),				 
 										.address(address),
 										.rw_req(rw_req),
