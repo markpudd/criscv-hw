@@ -439,6 +439,7 @@ module criscv(input  mclk,
 		 		if(mem_rec)
 				begin
 						pc <= mem_read_data;
+						mem_rw_req<= 0;
 						state <= 3'h0;	  
 				end	
 				end	

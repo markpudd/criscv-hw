@@ -1,8 +1,6 @@
-/*  Super simple (and slightly rubbish) SRAM MMU,  there is massive optimzations that could be done for this:-
-			*  Caching would substabtialy speed the whole thing up 
+/*  Super simple  MMU,  there is massive optimzations that could be done for this:-
 			*  Bigger reads - Currently using 16-bit memory - the built in Cyclone memory can deliver 256 bits at a time
 			*  Use Cyclone dual port to optimizes instruction vs data
-			*  Don't allow byte addresses (unless the byte commands)
 			*  Add pre-fetch (likely next read is last read (pc) +4
 */
 module mmu(input clk,
@@ -44,21 +42,32 @@ module mmu(input clk,
 					DONE=3'h5,
 					DR=3'h6;
 
+	localparam MEMORY_DELAY = 3'd2; 
+
 	reg [3:0] nState;
 	reg [3:0] cState;
 	reg [3:0] pState;
-
+	reg [2:0] mdelay;
 				 
 	reg [31:0]i_read_data;
 	
+	wire ce;
+	wire cel;
 	wire [1:0] be;	
 	wire  [31:0] br_address;
 
 	wire [15:0] br_data;
 	wire		 br_wren;
-
+	wire		 br_lwren;
+	wire		 br_hwren;
+	wire [11:0]	ram_address;
 	wire [15:0] br_q;
+	wire [15:0] lbr_q;
+	wire [15:0] hbr_q;
+	
 	wire m_data_valid;
+	wire mc_data_valid;
+	reg ml_data_valid;
 	
 	wire mem_req;
 
@@ -77,9 +86,9 @@ module mmu(input clk,
 						.be(be),
 						.rw_req(mem_req),
 						.write_data(br_data),
-						.rw(br_wren),
-						.read_data(br_q),
-						.data_valid(m_data_valid),
+						.rw(br_hwren),
+						.read_data(hbr_q),
+						.data_valid(mc_data_valid),
 						 
 					.dram_dq(dram_dq),
 					.dram_addr(dram_addr),
@@ -91,20 +100,34 @@ module mmu(input clk,
 					.dram_cs_n(dram_cs_n),
 					.dram_ba0(dram_ba0),
 					.dram_ba1(dram_ba1));	
-				
-	
-assign ce = (address[31]==0  && address >= 32'h10000);
 	
 
+	ram ram(.address(ram_address),
+				.byteena(be),
+				.clock(clk),
+				.data(br_data),
+				.wren(br_lwren),
+				.q(lbr_q));
+				
+assign br_q = ce ?	hbr_q : lbr_q;
+
+assign br_hwren = br_wren && ce;
+assign br_lwren = br_wren && cel;
+
+assign ram_address = br_address[12:1];
+assign ce = (address[31]==0  && address >= 32'h10000);
+assign cel = (address[31]==0  && address < 32'h10000);
+	
 	
 assign br_address = (cState == IDLE) ? address :
 						  (cState == WORD_ODD_P3) ? address+32'h4 :
 						  address+32'h2;
 						  
 						  
-assign mem_req = (rw_req && ce && cState !=DONE && cState!=DR);
-assign br_wren = 	(rw_req && ce && rw);
+assign mem_req = (rw_req &&  address[31]==0 && cState !=DONE && cState!=DR);
+assign br_wren = 	(rw_req && rw && cState !=DONE && cState!=DR);
 
+assign m_data_valid = ce ? mc_data_valid : ml_data_valid;
 /*
  *  These can be reduced but for ease of readabilty keep them full for now
  */
@@ -164,11 +187,39 @@ always@(posedge clk) begin
 	end
 end
 	
+always@(posedge clk) begin
+	if(~reset)
+	begin
+		mdelay = 0;
+	end
+	else
+	begin
+		if(mem_req) 
+		begin
+
+			if(mdelay == MEMORY_DELAY)
+			begin
+				ml_data_valid <= 1;
+				mdelay <=0;
+			end
+			else
+			begin
+				ml_data_valid <= 0;
+				mdelay = mdelay+3'b1;
+			end
+		end
+		else
+		begin
+			ml_data_valid <= 0;
+			mdelay <=3'b1;
+		end
+	end
+end
 	
 always@ ( * ) begin
 		 case(cState)
 			 IDLE: begin
-						if(rw_req && ce) begin
+						if(rw_req && address[31]==0) begin
 							case(req_type)
 								D_BYTE_EVEN: nState=DONE;
 								D_BYTE_ODD: nState=DONE;
@@ -195,12 +246,11 @@ always@ ( * ) begin
 						  nState = DONE; 
 						 end	
    		DONE: begin
-						nState = DR; 
+						nState = IDLE; 
 					 end		
    		DR: begin
 						nState = IDLE; 
-					 end		
-			
+					 end					
 		endcase
 end
 	
