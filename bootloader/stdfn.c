@@ -2,30 +2,76 @@
 #include <sys/asm.h>
 #include <machine/syscall.h>
 
+
+int pid;
+extern char * _end[]; 
+
+char* file_dp;
+int  fdp_offset;
+
 int _write (int fd, char *buf, int count) {
-  char * uart = (char *)0xffffff01;
-  char * uart_status = (char *)0xffffff02;
-  for(int i=0;i<count;i++) {
-    uart[0] = buf[i];
-    while((uart_status[0] & 1)== 1) {};
+  if(fd != 5) {
+    char * uart = (char *)0xffffff01;
+    char * uart_status = (char *)0xffffff02;
+    for(int i=0;i<count;i++) {
+      uart[0] = buf[i];
+      while((uart_status[0] & 1)== 1) {};
+    }
+  } else {
+    for(int i=0;i<count;i++) {
+        file_dp[fdp_offset++]=buf[i];
+      
+    }
   }
+
+
   return count;
 }
 
 int _read (int fd, char *buf, int count) {
-  char * uart_in = (char *)0xffffff03;
-  char * uart_status = (char *)0xffffff02;
-  int pos=0;
-  while(pos<count){
-    if((uart_status[0] & 2)== 2) {
-      buf[pos]=uart_in[0];
+  if(fd != 5) {
+    char * uart_in = (char *)0xffffff03;
+    char * uart_status = (char *)0xffffff02;
+    int pos=0;
+    while(pos<count){
+      if((uart_status[0] & 2)== 2) {
+        buf[pos]=uart_in[0];
+      }
+    }
+  } else {
+    for(int i=0;i<count;i++) {
+        buf[i]=file_dp[fdp_offset++];
     }
   }
   return count;
 }
 
+int
+_open(const char *name, int flags, int mode)
+{
+  if(!strcmp("./test.bin"),name) {
+    file_dp=  (unsigned char *)0xC00000;
+    fdp_offset =0;
+    return 5;
+  }
+  return NULL;
+}
+
 int _lseek(int fd, off_t offset, int whence) {
+  if(fd == 5) {
+    switch (whence) {
+      case SEEK_SET:
+        fdp_offset=offset;
+        break;
+      case SEEK_CUR:
+        fdp_offset=fdp_offset+offset;
+        break;
+            
+    } 
+      return fdp_offset;
+  }
   return 0;
+
 }
 
 int _fstat (int file, struct stat *buf) {
@@ -37,17 +83,33 @@ int _close(int fd) {
 }
 
 pid_t _getpid() {
-  return 23;
+  return pid;
 }
 
 int _kill(pid_t pid, int sig){
   return 0;
 }
+/*
+int _sbrk(int incr) {
+  int *  heap_end = (int*) 0x00000000;
+  int prev_end = heap_end[0];
+  heap_end[0]=heap_end[0]+incr;
+  return prev_end;
+}
+*/
 
 
+ int _isatty(int fd){
+   return 1;
+ }
+ 
 int _brk(int incr) {
+  int * bss_size = (int *)0x0;
 
-  return 0;
+  if(incr == 0)
+    return _end+bss_size[0];
+  else
+    return incr;
 }
 
 void syscall() __attribute__ ((interrupt ("machine")));
@@ -89,6 +151,10 @@ void syscall() {
      case SYS_kill:
        ret=_kill((pid_t)a0,a1);
        break;
+    case SYS_open:
+      ret=_open((char *)a0, a1,a2);
+      break;
+      
        case SYS_brk:
          ret=_brk(a0);
          break;

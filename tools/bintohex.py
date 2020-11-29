@@ -32,6 +32,8 @@ for i in range(0,4096):
     b2 = elf.read(1)
     b3 = elf.read(1)
     b4 = elf.read(1)
+    if(b1 == ''):
+        break;
     printRow(i*2,b1,b2)
     printRow(i*2+1,b3,b4)
 

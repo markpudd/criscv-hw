@@ -1,4 +1,5 @@
-module uart(input wire sclk,
+
+	module uart(input wire sclk,
 					output dout,
 				   input reset,
 				   input wire ss,
@@ -9,15 +10,10 @@ module uart(input wire sclk,
 					input wire din,
 					input wire rr);
 
-   // 9600
-//	localparam UART_TIME_DELAY = 16'h1458; 						
-//	localparam UART_TIME_RDELAY = 18'ha2c; 
-//	localparam UART_TIME_QDELAY = 18'h516; 
 
-	  // 38400
-	localparam UART_TIME_DELAY = 16'h1458/6; 						
-	localparam UART_TIME_RDELAY = 18'ha2c/6; 
-	localparam UART_TIME_QDELAY = 18'h516/6; 
+	localparam UART_TIME_DELAY = 16'h1458/24;				
+	localparam UART_TIME_RDELAY = 18'ha2c/24;
+	localparam UART_TIME_QDELAY = 18'h516/24;
 
 
 	
@@ -37,11 +33,19 @@ module uart(input wire sclk,
 	reg [7:0] i_rec_data;
 	reg i_rec_valid;
 		
+	reg [7:0] in_buffer [0:15] ;
+//	reg [7:0] out_buffer [15:0] ;
+
+	reg [2:0] in_buffer_read_pos;
+	reg [2:0] in_buffer_write_pos;
 	
 
+//	reg [2:0] out_buffer_read_pos;
+//	reg [2:0] out_buffer_write_pos;
+
 	
-	assign rec_data = i_rec_data;
-	assign rec_valid = i_rec_valid;
+	assign rec_data = in_buffer[in_buffer_read_pos]; // i_rec_data;
+	assign rec_valid = (in_buffer_read_pos != in_buffer_write_pos); //i_rec_valid;
 
 		//  RECIEVE
 	reg recclk;
@@ -51,7 +55,9 @@ module uart(input wire sclk,
 	
 	
 	
-	
+	/*
+	*    Clock Generation
+	*/
 	always @(posedge sclk,negedge reset)
 	begin
 		if(~reset)
@@ -85,7 +91,9 @@ module uart(input wire sclk,
 	reg finish;
 	
 
-	
+	/*
+	 *   Output
+	 */
 	always @(posedge recclk,posedge ss,negedge reset)
 	begin
 		if(~reset)
@@ -101,6 +109,9 @@ module uart(input wire sclk,
 	end
 	
 	
+	/*
+	 *   Output
+	 */
 	always @(posedge ss,negedge reset)
 	begin
 		if(~reset)
@@ -113,38 +124,51 @@ module uart(input wire sclk,
 	assign busy = sendcount != 4'd10;
 	
 	
-
+	always @( posedge rr,negedge reset)
+	begin
+		if(~reset)
+		begin
+			in_buffer_read_pos=0;
+		end
+		else
+		begin
+			if(in_buffer_read_pos != in_buffer_write_pos)
+					in_buffer_read_pos = in_buffer_read_pos+1;
+		end
+	end
 	
 	
-
-	always @(posedge recclk, negedge reset,posedge rr)
+	/*
+	*    Input
+	*/
+	always @(posedge recclk, negedge reset)
 	begin
 		if(~reset)
 		begin
 			shiftin <= 9'h0;
-			reccount= 0;
+			reccount=  4'h0;
+			i_rec_valid=0;
+			in_buffer_write_pos=0;
 		end
 		else
 		begin
-			if(rr)
-				i_rec_valid=0;
-			else
+			shiftin <= {din,shiftin[9:1]};
+			if(reccount == 9) 
 			begin
-				shiftin <= {din,shiftin[9:1]};
-				if(reccount == 9) 
+				if(shiftin[9] & ~shiftin[0])
 				begin
-					if(shiftin[9] & ~shiftin[0])
-					begin
-						i_rec_data = shiftin[8:1];
-						i_rec_valid=1'b1;
-						reccount = 4'h0;
-					end
+				//	i_rec_data = shiftin[8:1];
+					i_rec_valid=1'b1;
+					in_buffer[in_buffer_write_pos] = shiftin[8:1];
+					in_buffer_write_pos = in_buffer_write_pos+1;
+					reccount = 4'h0;
 				end
-				else
-					reccount = reccount+4'b1;	
 			end
+			else
+				reccount = reccount+4'b1;	
 		end
 	end
-		
+	
+	
 	
 endmodule

@@ -14,19 +14,19 @@ module mmu(input clk,
 				 input wire[1:0] size,
 				 output wire[31:0] read_data,
 				 output data_valid,
-						 
-						 
-				inout [15:0] dram_dq,
-				output wire [12:0] dram_addr,
-				output wire [1:0] dram_dqm,
-				output wire dram_cke,
-				output wire dram_we_n,
-				output wire dram_cas_n,
-				output wire dram_ras_n,
-				output wire dram_cs_n,
-				output wire dram_ba0,
-				output wire dram_ba1);
-			
+				 output busy,	 
+
+				output wire	  sd_ce,
+				output wire	[31:0]  sd_address,
+				output wire sd_rw_req,
+				output wire  sd_rw,
+				output wire[15:0] sd_write_data,
+				output wire[7:0] sd_burst_len,
+				input wire[15:0] sd_read_data,
+				input wire sd_data_bursting);
+	
+	parameter LOW_RAM_WIDTH =13;	
+	
 	localparam 	D_BYTE_EVEN ={2'h0,1'b0},
 					D_BYTE_ODD = {2'h0,1'b1},
 					D_HALF_EVEN ={2'h1,1'b0},
@@ -50,7 +50,7 @@ module mmu(input clk,
 	reg [2:0] mdelay;
 				 
 	reg [31:0]i_read_data;
-	
+
 	wire ce;
 	wire cel;
 	wire [1:0] be;	
@@ -60,22 +60,24 @@ module mmu(input clk,
 	wire		 br_wren;
 	wire		 br_lwren;
 	wire		 br_hwren;
-	wire [11:0]	ram_address;
+	wire [LOW_RAM_WIDTH:0]	ram_address;
 	wire [15:0] br_q;
 	wire [15:0] lbr_q;
 	wire [15:0] hbr_q;
 	
 	wire m_data_valid;
 	wire mc_data_valid;
+	wire cache_busy;
 	reg ml_data_valid;
 	
 	wire mem_req;
 
 
+	 
 	wire [2:0] req_type;
 
 	assign req_type={size,address[0]};
-	
+	assign sd_ce = ce;
 	
 	memcache memcache( .clk(clk),
 				       .mclk(mclk),
@@ -89,18 +91,15 @@ module mmu(input clk,
 						.rw(br_hwren),
 						.read_data(hbr_q),
 						.data_valid(mc_data_valid),
-						 
-					.dram_dq(dram_dq),
-					.dram_addr(dram_addr),
-					.dram_dqm(dram_dqm),
-					.dram_cke(dram_cke),
-					.dram_we_n(dram_we_n),
-					.dram_cas_n(dram_cas_n),
-					.dram_ras_n(dram_ras_n),
-					.dram_cs_n(dram_cs_n),
-					.dram_ba0(dram_ba0),
-					.dram_ba1(dram_ba1));	
-	
+						.busy(cache_busy),
+						
+						.sd_address(sd_address),
+						.sd_rw_req(sd_rw_req),
+						.sd_rw(sd_rw),
+						.sd_write_data(sd_write_data),
+						.sd_read_data(sd_read_data),
+						.sd_burst_len(sd_burst_len),
+						.sd_data_bursting(sd_data_bursting));
 
 	ram ram(.address(ram_address),
 				.byteena(be),
@@ -108,13 +107,14 @@ module mmu(input clk,
 				.data(br_data),
 				.wren(br_lwren),
 				.q(lbr_q));
-				
+	
+	
 assign br_q = ce ?	hbr_q : lbr_q;
 
 assign br_hwren = br_wren && ce;
 assign br_lwren = br_wren && cel;
 
-assign ram_address = br_address[12:1];
+assign ram_address = br_address[LOW_RAM_WIDTH+1:1];
 assign ce = (address[31]==0  && address >= 32'h10000);
 assign cel = (address[31]==0  && address < 32'h10000);
 	
@@ -128,6 +128,8 @@ assign mem_req = (rw_req &&  address[31]==0 && cState !=DONE && cState!=DR);
 assign br_wren = 	(rw_req && rw && cState !=DONE && cState!=DR);
 
 assign m_data_valid = ce ? mc_data_valid : ml_data_valid;
+
+assign busy = (cState != IDLE);
 /*
  *  These can be reduced but for ease of readabilty keep them full for now
  */
@@ -172,7 +174,8 @@ always@ ( posedge clk ) begin
 		if(cState == WORD_ODD_P3 )  i_read_data <=  {br_q[7:0],i_read_data[23:0]};
 end		 
 						 
-			  
+	
+		
 always@(posedge clk) begin
 	if(~reset)
 	begin
@@ -180,13 +183,15 @@ always@(posedge clk) begin
 	end
 	else
 	begin
-		if(m_data_valid || cState ==DONE ||cState==DR) begin
+		if(m_data_valid || (cState ==DONE && !cache_busy) ||(cState ==DR && !cache_busy)) begin
 			pState = cState;
 			cState= nState;
 		end
 	end
 end
 	
+	
+// Local Ram
 always@(posedge clk) begin
 	if(~reset)
 	begin

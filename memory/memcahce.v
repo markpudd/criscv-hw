@@ -1,26 +1,25 @@
 module memcache(input clk,
 				input mclk,
 				input cclk,
-				 input wire  ce,
-						 input reset,
-						 input wire [31:0] address,
-						 input wire [1:0] be,
-						 input wire  rw_req,
-						 input wire  rw,
-						 input wire[15:0] write_data,
-						 output wire[15:0] read_data,
-						 output data_valid,
+				input wire  ce,
+			   input reset,
+				input wire [31:0] address,
+				input wire [1:0] be,
+				input wire  rw_req,
+				input wire  rw,
+				input wire[15:0] write_data,
+				output wire[15:0] read_data,
+				output data_valid,
+				output busy,
 						 
-				inout [15:0] dram_dq,
-				output wire [12:0] dram_addr,
-				output wire [1:0] dram_dqm,
-				output wire dram_cke,
-				output wire dram_we_n,
-				output wire dram_cas_n,
-				output wire dram_ras_n,
-				output wire dram_cs_n,
-				output wire dram_ba0,
-				output wire dram_ba1);
+
+				output wire	[31:0]  sd_address,
+				output wire sd_rw_req,
+				output wire  sd_rw,
+				output wire[15:0] sd_write_data,
+				input wire[15:0] sd_read_data,
+				output wire[7:0] sd_burst_len,
+				input wire sd_data_bursting);
 						 
 localparam 	 IDLE = 4'd0,
 				 REQUEST = 4'd1,
@@ -30,14 +29,18 @@ localparam 	 IDLE = 4'd0,
    			 LOAD_PAGE = 4'd5,
 				 DATA_FINISH = 4'd6,
 				 DATA_WAIT = 4'd7,
-					CACHE_CHECK_PRE= 4'd8,
-										CACHE_CHECK_PRE2= 4'd9,
-										LOAD_PREP=4'd10,
-										UPDATE_CL=4'd11;
+				 CACHE_CHECK_PRE= 4'd8,
+				 CACHE_CHECK_PRE2= 4'd9,
+				 LOAD_PREP=4'd10,
+				 UPDATE_CL=4'd11;
+				 
+				 
 // Cache page size
 localparam   PAGE_SIZE=31;
 // Total chahe row (x2 as 2 associative)
 localparam   CACHE_SIZE=256;
+
+
 localparam READ_DELAY=2;
 reg [4:0] nState;
 reg [4:0] cState;
@@ -48,23 +51,20 @@ wire [14:0] cache_tag;
 wire [15:0] c_q;
 wire [15:0] c_data;
 
-wire [31:0] sd_address;
-wire [15:0] sd_read_data;
-wire [15:0] sd_write_data;
 
-wire [12:0]  c_address;
-wire [12:0] cache_data_base;
-wire [12:0] cache_data_address;
+
+
+
+wire [11:0]  c_address;
+wire [11:0] cache_data_base;
+wire [11:0] cache_data_address;
 reg [5:0] a_count;
-wire sd_rw;
-wire sd_rw_req;
-wire sd_bursting;
 
 wire c_wren;
 
 wire [1:0]c_be;
 
-wire [8:0]  cl_address;
+wire [6:0]  cl_address;
 wire cl_wren;
 wire [1:0]cl_be;
 wire [15:0] cl_data[1:0];
@@ -88,6 +88,7 @@ reg tag_hit;
 
 reg replace_index;
 
+assign sd_burst_len = 8'd31;
 
 assign cache_offset = address[5:1];
 assign cache_set = address[12:6];
@@ -111,10 +112,10 @@ assign c_data =(cState != LOAD_PAGE && cState != STORE_PAGE) ?  write_data :sd_r
 assign c_be = (cState != LOAD_PAGE && cState != STORE_PAGE)  ? be : 2'b11;
 
 
-assign cl_address = {cache_set,1'b0};
+assign cl_address = cache_set; //,1'b0};
 
 // Update tags om completion
-assign cl_data[0]= ~replace_index ? {cache_tag,1'b1} : {cl_q[0][15:1],1'b0};
+assign cl_data[0]=  ~replace_index ? {cache_tag,1'b1} : {cl_q[0][15:1],1'b0};
 assign cl_data[1]= replace_index ? {cache_tag,1'b1} : {cl_q[1][15:1],1'b0};
 assign cl_wren=( cState  == UPDATE_CL);
 
@@ -129,7 +130,7 @@ assign c_q=ac_q[cache_hit_set];
 
 
 assign data_valid = (cState == DATA_FINISH);
-
+assign busy=(cState  != IDLE);
 
 // Slow clock for sdram
 assign fsm_clk =  (cState == IDLE ||
@@ -168,31 +169,7 @@ cachelookup cachelookup1(.address(cl_address),
 						.wren(cl_wren),
 						.q(cl_q[1]));
 
-						
-						
-sdramburst sdramburst( .clk(cclk),
-						.ce(ce),
-					    .reset(reset),
-						 .address(sd_address),
-						 .rw_req(sd_rw_req),
-						 .rw(sd_rw),
-						 .write_data(sd_write_data),
-						 .read_data(sd_read_data),
-						 .data_bursting(sd_bursting),
-						 
-					.mclk(mclk),
-					.dram_dq(dram_dq),
-					.dram_addr(dram_addr),
-					.dram_dqm(dram_dqm),
-					.dram_cke(dram_cke),
-					.dram_we_n(dram_we_n),
-					.dram_cas_n(dram_cas_n),
-					.dram_ras_n(dram_ras_n),
-					.dram_cs_n(dram_cs_n),
-					.dram_ba0(dram_ba0),
-					.dram_ba1(dram_ba1));
-						 
-				
+
 					
 					
 always@(posedge fsm_clk) begin
@@ -214,7 +191,7 @@ always@(posedge fsm_clk) begin
 		replace_index = cl_q[0][0];
 	end
 	if(cState ==  LOAD_PREP) a_count =-1;
-	else if(sd_bursting && (cState == LOAD_PAGE || cState == STORE_PAGE))
+	else if(sd_data_bursting && (cState == LOAD_PAGE || cState == STORE_PAGE))
 		a_count=a_count+6'd1;
 end
 

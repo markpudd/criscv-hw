@@ -7,17 +7,24 @@ The clock is expected to be 50Mhz at the moment and this is doubled using a PLL.
 
 ## MMU
 
-There is some basic code for sdram and caching.   The following is what is available:-
-
-    - memory_cont.v - Basic memory access for on board RAM
-    - sdram.v - Basic SDRAM access
-    - mmu.v - Basic cached memory using onboard RAM and SDRAM 
+The MMU cache is a 2 way associative cache (64 bytes per entry) 
     
 By default the SDRAM as any address over 0x10000 (otherwise onboard).  The MMU is used for SDRAM caching, it is a direct mapped cahce (2-way associative is coming).  There is still a bunch of optimazation coming for the cahce which should drop the cache hit access time to 1-2 cycles.
 
+The SDRAM burst is design to be used from multiple source (cache, video and DMA).
+
 ## UART
 
-There a basic UART which can be used to upload code.  
+There a basic UART which can be used to upload code.  There is a 16 byte buffer on UART RX.
+
+## Video
+
+*This currently has some display artifacting which will be fixed*
+
+There is some 4 bit VGA support.  It uses 640x480, although the image  stored in memory will be 320x240 with a 256 byte palette.  The palette is written to at 0xfff7fc00.  There is commands at 0xfff7ff00 to set the frame start in SDRAM.
+
+The video code uses a lot of resources mainly due to the paltte and scanline buffers.  It should be reasonbly easy to modify for higher res
+
 
 ## Bootloader
 

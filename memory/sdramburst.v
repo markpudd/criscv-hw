@@ -7,6 +7,7 @@ module sdramburst (
 				input wire  rw,
 				input wire[15:0] write_data,
 				output wire[15:0] read_data,
+				input wire[7:0] burst_len,
 				output data_bursting,
 					
 				input  mclk,
@@ -251,7 +252,7 @@ always@ ( * ) begin
 					dtarget =WRITE_DELAY;
 				end
 		 WRITE_COL : begin
-							if(burst ==BURST_LEN)
+							if(burst == BURST_LEN)
 								command=CMD_WRITE;
 							else
 								command=CMD_NOP;
@@ -274,7 +275,7 @@ always@ ( * ) begin
 		DONE_RC: begin
 						command=CMD_NOP;	
 						dtarget =TRC_DELAY;
-						nState = IDLE;
+						nState = AUTO_REFRESH;
 					end
 	endcase	
 	if(nop)
