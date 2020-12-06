@@ -2,11 +2,24 @@
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
-The clock is expected to be 50Mhz at the moment and this is doubled using a PLL.  The clock is slowed for SDRAM access at the testboard used to develop has a 50HZ clock and only supports this externally.  
+If your looking to build an run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM
 
+## Current Specs
+
+* 50Mhz clock
+* 128 Instruction read only L1 cache
+* 128K 2 Way associative L2 cache
+* SDRAM controller
+* UART
+* Video Output- 256 color palatte (4bit per chanel) 320x200 scaled VGA output
+* Basic bootloader with basic System functions implemented (via ECALL)
+* 19,140 Logic elements when synthised on Cyclone IV E (22,230 avalible LEs)
+* Tested on DE0-Nano
+
+These specs are based on running on Cyclone IV but this could be reconfigure for other FPGA's.
 
 ## MMU
-
+ 
 The MMU cache is a 2 way associative cache (64 bytes per entry) 
     
 By default the SDRAM as any address over 0x10000 (otherwise onboard).  The MMU is used for SDRAM caching, it is a direct mapped cahce (2-way associative is coming).  There is still a bunch of optimazation coming for the cahce which should drop the cache hit access time to 1-2 cycles.
