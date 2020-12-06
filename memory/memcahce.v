@@ -1,6 +1,5 @@
 module memcache(input clk,
 				input mclk,
-				input cclk,
 				input wire  ce,
 			   input reset,
 				input wire [31:0] address,
@@ -138,7 +137,7 @@ assign fsm_clk =  (cState == IDLE ||
 						cState == CACHE_CHECK ||	
 						cState == DATA_WAIT ||
 						cState == DATA_FINISH ||
-						cState ==  DATA_IO) ? clk : cclk;
+						cState ==  DATA_IO) ? clk : mclk;
 
 // Cache set 0						
 cache cache0(.address(c_address),
@@ -190,7 +189,7 @@ always@(posedge fsm_clk) begin
 		a_count =0;
 		replace_index = cl_q[0][0];
 	end
-	if(cState ==  LOAD_PREP) a_count =-1;
+	if(cState ==  LOAD_PREP) a_count =-6'b1;
 	else if(sd_data_bursting && (cState == LOAD_PAGE || cState == STORE_PAGE))
 		a_count=a_count+6'd1;
 end

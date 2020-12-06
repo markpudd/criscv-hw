@@ -10,11 +10,15 @@
 					input wire din,
 					input wire rr);
 
-
+	// 50Mhz  clock
 	localparam UART_TIME_DELAY = 16'h1458/24;				
 	localparam UART_TIME_RDELAY = 18'ha2c/24;
 	localparam UART_TIME_QDELAY = 18'h516/24;
 
+	// 75Mhz  clock
+//	localparam UART_TIME_DELAY = 16'h1f4c/24;				
+//	localparam UART_TIME_RDELAY = 18'hfa6/24;
+//	localparam UART_TIME_QDELAY = 18'h7d3/24;
 
 	
 	reg [2:0] in_pos;
@@ -31,13 +35,13 @@
 	reg [17:0] uartcount;
 	
 	reg [7:0] i_rec_data;
-	reg i_rec_valid;
+
 		
-	reg [7:0] in_buffer [0:15] ;
+	reg [7:0] in_buffer [0:3] ;
 //	reg [7:0] out_buffer [15:0] ;
 
-	reg [2:0] in_buffer_read_pos;
-	reg [2:0] in_buffer_write_pos;
+	reg [1:0] in_buffer_read_pos;
+	reg [1:0] in_buffer_write_pos;
 	
 
 //	reg [2:0] out_buffer_read_pos;
@@ -133,7 +137,7 @@
 		else
 		begin
 			if(in_buffer_read_pos != in_buffer_write_pos)
-					in_buffer_read_pos = in_buffer_read_pos+1;
+					in_buffer_read_pos = in_buffer_read_pos+3'b1;
 		end
 	end
 	
@@ -147,7 +151,6 @@
 		begin
 			shiftin <= 9'h0;
 			reccount=  4'h0;
-			i_rec_valid=0;
 			in_buffer_write_pos=0;
 		end
 		else
@@ -158,9 +161,8 @@
 				if(shiftin[9] & ~shiftin[0])
 				begin
 				//	i_rec_data = shiftin[8:1];
-					i_rec_valid=1'b1;
 					in_buffer[in_buffer_write_pos] = shiftin[8:1];
-					in_buffer_write_pos = in_buffer_write_pos+1;
+					in_buffer_write_pos = in_buffer_write_pos+2'b1;
 					reccount = 4'h0;
 				end
 			end

@@ -5,7 +5,6 @@
 */
 module mmu(input clk,
 				input mclk,
-				input cclk,
 				 input reset,
 				 input wire [31:0] address,
 				 input wire rw_req,
@@ -39,14 +38,13 @@ module mmu(input clk,
 					WORD_EVEN_P2 =3'h2,
 					WORD_ODD_P2 =3'h3,
 					WORD_ODD_P3 =3'h4,
-					DONE=3'h5,
-					DR=3'h6;
+					DONE=3'h5;
 
 	localparam MEMORY_DELAY = 3'd2; 
 
 	reg [3:0] nState;
 	reg [3:0] cState;
-	reg [3:0] pState;
+
 	reg [2:0] mdelay;
 				 
 	reg [31:0]i_read_data;
@@ -81,7 +79,6 @@ module mmu(input clk,
 	
 	memcache memcache( .clk(clk),
 				       .mclk(mclk),
-				       .cclk(cclk),
 						 .ce(ce),
 						 .reset(reset),
 						 .address(br_address),
@@ -124,8 +121,8 @@ assign br_address = (cState == IDLE) ? address :
 						  address+32'h2;
 						  
 						  
-assign mem_req = (rw_req &&  address[31]==0 && cState !=DONE && cState!=DR);
-assign br_wren = 	(rw_req && rw && cState !=DONE && cState!=DR);
+assign mem_req = (rw_req &&  address[31]==0 && cState !=DONE );
+assign br_wren = 	(rw_req && rw && cState !=DONE );
 
 assign m_data_valid = ce ? mc_data_valid : ml_data_valid;
 
@@ -179,13 +176,12 @@ end
 always@(posedge clk) begin
 	if(~reset)
 	begin
-		cState = IDLE;
+		cState <= IDLE;
 	end
 	else
 	begin
-		if(m_data_valid || (cState ==DONE && !cache_busy) ||(cState ==DR && !cache_busy)) begin
-			pState = cState;
-			cState= nState;
+		if(m_data_valid || (cState ==DONE && !cache_busy)) begin
+			cState<= nState;
 		end
 	end
 end
@@ -253,9 +249,7 @@ always@ ( * ) begin
    		DONE: begin
 						nState = IDLE; 
 					 end		
-   		DR: begin
-						nState = IDLE; 
-					 end					
+				
 		endcase
 end
 	

@@ -9,8 +9,8 @@ module sdramburst (
 				output wire[15:0] read_data,
 				input wire[7:0] burst_len,
 				output data_bursting,
-					
-				input  mclk,
+				
+				input	  dclk,
 				inout [15:0] dram_dq,
 				output wire [12:0] dram_addr,
 				output wire [1:0] dram_dqm,

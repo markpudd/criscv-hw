@@ -6,6 +6,7 @@ module top(input  mclk,
 				output wire sout,
 				output wire led,
 				input sin,
+
 				output wire  dram_clk,
 				inout [15:0] dram_dq,
 				output wire [12:0] dram_addr,
@@ -23,8 +24,7 @@ module top(input  mclk,
 				output [3:0]g,
 				output [3:0]b,
 				output vsync,
-				output hsync,
-				input viclk);
+				output hsync);
 
 					
 	wire [31:0] address;	
@@ -81,14 +81,18 @@ module top(input  mclk,
 		// PLL to clock mem correctly
 	mem_clock memclk (
 					.inclk0(mclk),
-					.c0(dram_clk),
-					.c1(cache_clk),
-					.c2(cpu_clk));
+					.c0(cache_clk),
+					.c1(cpu_clk));
 	
 	video_clock video_clock(
 					.inclk0(mclk),
 					.c0(vclk));
 
+	
+	dram_clk dram_clock(
+					.inclk0(mclk),
+					.c0(dram_clk),
+					.c1(dram_clk_2));
 					
 	// Bus Arb - TODO move into SDRAM where it should be
 	reg ram_arb;		
@@ -145,7 +149,7 @@ module top(input  mclk,
 					
 
 					
-	vga vga(      .clk(cache_clk),	
+	vga vga(        .clk(dram_clk_2),	
 					    .vclk(vclk),
 						 .reset(reset),
 						 .address(sd_address_v),
@@ -182,9 +186,8 @@ module top(input  mclk,
 		  
 
 
-		mmu mmu(.clk(cpu_clk),
-						.mclk(dram_clk),
-						.cclk(cache_clk),
+		mmu mmu(.clk(cache_clk),
+						.mclk(dram_clk_2),
 						.reset(reset),
 						.address(address),
 						.rw_req(rw_req),
@@ -221,7 +224,7 @@ module top(input  mclk,
 										.sout(sout),
 									   .sin(sin));
 
-		sdramburst sdramburst( .clk(cache_clk),
+		sdramburst sdramburst( .clk(dram_clk_2),
 								.ce(sd_ce),
 								 .reset(reset),
 								 .address(sd_address),
@@ -233,7 +236,7 @@ module top(input  mclk,
 								 .data_bursting(sd_bursting),
 					
 								 
-							.mclk(dram_clk),
+		
 							.dram_dq(dram_dq),
 							.dram_addr(dram_addr),
 							.dram_dqm(dram_dqm),
