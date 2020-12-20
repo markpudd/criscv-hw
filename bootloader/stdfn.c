@@ -1,5 +1,7 @@
 #include "stdfn.h"
 #include <sys/asm.h>
+#include <sys/time.h>
+
 #include <machine/syscall.h>
 
 
@@ -112,6 +114,23 @@ int _brk(int incr) {
     return incr;
 }
 
+int _gettimeofday(struct timeval *tv, struct timezone *tz) {
+  int mcycle;
+  int mcycleh;
+  asm("CSRRSI %0, mcycle,0" : "=r"(mcycle) : ); 
+  asm("CSRRSI %0, mcycleh,0" : "=r"(mcycleh) : ); 
+
+  // time in 50Mhz chyles
+  long long time = mcycleh;
+  time = ((long long)time) << 32;
+  time = time |mcycle;
+
+  long long total_ms = time/50;
+  tv->tv_sec = total_ms/1000000;
+  tv->tv_usec= total_ms%1000000;
+  return 0;
+}
+
 void syscall() __attribute__ ((interrupt ("machine")));
 
 void syscall() {
@@ -153,6 +172,9 @@ void syscall() {
        break;
     case SYS_open:
       ret=_open((char *)a0, a1,a2);
+      break;
+    case SYS_gettimeofday:
+      ret=_gettimeofday((struct timeval *)a0,(struct timezone *) a1);
       break;
       
        case SYS_brk:

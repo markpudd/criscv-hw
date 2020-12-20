@@ -98,16 +98,51 @@ module criscv(input  mclk,
 
 
 	wire [31:0] mpx_csr;
+	reg [31:0] mpx_reg;
 
 	// CSR Registers to allow for traps, exception and interupts
 	reg [31:0]  machine_trap_setup_regs [7:0] ;
 	reg [31:0]  machine_trap_handling_regs [5:0] ;
+	reg [63:0] mcycle;
+	reg [63:0] minstret;
+	
+	/*
+function csr_func;
+		input [12:0] csr_i;
+		begin
+	//	csr_func = 0;
+		case(csr_i[11:8])
+			4'h3: begin
+						 if(csr_i[7:4] == 4'h0) csr_func = machine_trap_setup_regs[csr_i[3:0]];
+						 if(csr_i[7:4] == 4'h3) csr_func = machine_trap_handling_regs[csr_i[3:0]];
+			      end
+			4'hb: begin
+						 if(csr_i[7:0] == 4'h0) csr_func = mcycle[31:0];
+						 if(csr_i[7:0] == 4'h2) csr_func = minstret[31:0];
+						 if(csr_i[7:0] == 4'h80) csr_func = mcycle[63:32];
+						 if(csr_i[7:0] == 4'h82) csr_func = minstret[63:32];
+			      end	
+		endcase
+		end
+endfunction
+
+assign mpx_csr =csr_func(csr);
+*/
 
 
-	assign mpx_csr = (csr[11:8] != 4'h3) ? 0 :
+assign mpx_csr = (csr[11:8] == 4'h3) ?
 						 (csr[7:4] == 4'h0) ?  machine_trap_setup_regs[csr[3:0]] :
 						 (csr[7:4] == 4'h3) ?  machine_trap_handling_regs[csr[3:0]] :
-						 0;
+						 0 :
+						 (csr[11:8] == 4'hb) ?
+							(csr[7:4] == 4'h0) ?  mcycle[31:0] :
+							(csr[7:4] == 4'h2) ?   minstret[31:0] :
+							(csr[7:4] == 4'h80) ?    mcycle[63:32] :
+							(csr[7:4] == 4'h82) ?  minstret[63:32] :
+						 0
+						 : 0;
+	
+
 		
 	wire alu_comp;
 
@@ -172,6 +207,8 @@ module criscv(input  mclk,
 	begin
 		pc <=32'h0;
 		crash <= 0;
+		mcycle<=0;
+		minstret<=0;
 		cache_clear_counter <= 0;
 	//	pc <= 32'h000002a0;
 	//	pc <= 32'h000000C0;
@@ -194,6 +231,7 @@ module criscv(input  mclk,
 	else
 	begin
 	led <= 1;
+	mcycle<=mcycle+63'b1;
 	case(state)
 		4'h5:  begin   // Start delay (SDRAM)
 				if(delay == 0)
@@ -270,7 +308,8 @@ module criscv(input  mclk,
 					end
 				end
 		4'h2: begin   // EXECUTE   -  TODO combine with decode and drop a cycle!
-			//					if(!mem_rec)
+				minstret<=minstret+63'b1;
+		//					if(!mem_rec)
 			//	begin
 					casex (opcode)
 						 7'b0x10011 :  // ALU
@@ -429,7 +468,7 @@ module criscv(input  mclk,
 													end
 										3'b001 : begin  // CSRRW
 													//read CRS
-													regs[rd_index] = mpx_csr;	
+													if(rd_index != 0) regs[rd_index] = mpx_csr;	
 													//  This is a bit rubish
 													if(csr[11:8] == 4'h3)
 													begin
@@ -439,18 +478,18 @@ module criscv(input  mclk,
 													pc <= pc+4;
 													state <= 3'h0;
 													end
-										3'b010 : begin  // CSRRS
+										3'b010 : begin  // CSRRS - TODO Fix
 													regs[rd_index] = mpx_csr | rs1;
 													pc <= pc+4;
 													state <= 3'h0;
 													end
-										3'b011 : begin  // CSRRC
+										3'b011 : begin  // CSRRC - TODO Fix
 													regs[rd_index] = mpx_csr & ~rs1;
 													pc <= pc+4;		
 													state <= 3'h0;
 													end
 										3'b101 : begin  // CSRRWI
-													regs[rd_index] = mpx_csr;	
+													if(rd_index != 0) regs[rd_index] = mpx_csr;	
 													//  This is a bit rubish
 													if(csr[11:8] == 4'h3)
 													begin
@@ -460,12 +499,12 @@ module criscv(input  mclk,
 													pc <= pc+4;
 													state <= 3'h0;
 													end
-										3'b110 : begin  // CSRRSI
+										3'b110 : begin  // CSRRSI - TODO Fix
 													regs[rd_index] = mpx_csr | uimm;
 													pc <= pc+4;
 													state <= 3'h0;
 													end
-										3'b111 : begin  // CSRRCI
+										3'b111 : begin  // CSRRCI - TODO Fix
 													regs[rd_index] = mpx_csr & ~uimm;
 													pc <= pc+4;
 													state <= 3'h0;
