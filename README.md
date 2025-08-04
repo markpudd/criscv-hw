@@ -2,7 +2,7 @@
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
-If your looking to build an run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM
+If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM
 
 ## Current Specs
 
@@ -41,9 +41,9 @@ The video code uses a lot of resources mainly due to the paltte and scanline buf
 
 ## Bootloader
 
-There is a basic binary bootloader.  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 230400.   The code will be loaded at 10000 and use SDRAM (with cach infront).
+There is a basic binary bootloader.  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 230400.   The code will be loaded at 10000 and use SDRAM (with cache infront).
 
-There is basic ECALL support.   The bootloader has some basic system call implementations so code can execute some system functions.
+There is basic ECALL support.  The bootloader has some basic system call implementations so code can execute some system functions.
 
 ## How to get it running
 
