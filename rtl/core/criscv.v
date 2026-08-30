@@ -224,9 +224,10 @@ assign mpx_csr = (csr[11:8] == 4'h3) ?
 	begin
 		pc <=32'h0;
 		regs[2] <= 32'h00BFFFFC;  //Stack intialization - To be replaced with bootloader
-		state <=6;
+		state <=5;
 		alu_req <=0;
 		led <= 0;
+		delay <= START_DELAY;
 	end
 	else
 	begin
@@ -235,7 +236,12 @@ assign mpx_csr = (csr[11:8] == 4'h3) ?
 	case(state)
 		4'h5:  begin   // Start delay (SDRAM)
 				if(delay == 0)
-					state <= 3'h6;
+					begin
+						pc <=32'h0000000; 
+						regs[2] <= 32'h00BFFFFC; 
+						mem_rw_req <= 0;
+						state <= 3'h0;
+					end
 				else
 				begin
 					l1_cache_lu[cache_clear_counter] = 21'h1fffff;

@@ -147,7 +147,7 @@ module top(input  mclk,
 
 	assign per_led =prec;
 					
-
+/*
 					
 	vga vga(        .clk(dram_clk_2),	
 					    .vclk(vclk),
@@ -167,7 +167,7 @@ module top(input  mclk,
 						 .b(b),
 						 .vsync(vsync),
 						 .hsync(hsync));					
-					
+					*/
 					
 	criscv cpu(.mclk(cpu_clk),
 				  .reset(reset),
@@ -221,7 +221,9 @@ module top(input  mclk,
 										.read_data(pread_data),
 										.prec(prec),
 										.port(port),
-										.sout(sout));
+										.sout(sout),
+									   .sin(sin));
+
 
 		sdramburst sdramburst( .clk(dram_clk_2),
 								.ce(sd_ce),
