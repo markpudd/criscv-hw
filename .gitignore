@@ -1,0 +1,17 @@
+# Quartus database and internal files
+db/
+incremental_db/
+output_files/
+hc_output/
+greybox_tmp/
+quartus/
+
+# Quartus user settings and reports
+*.qws
+*.rpt
+*.summary
+*.done
+*.pin
+*.sof
+*.pof
+*.bak

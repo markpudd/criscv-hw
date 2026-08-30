@@ -221,8 +221,7 @@ module top(input  mclk,
 										.read_data(pread_data),
 										.prec(prec),
 										.port(port),
-										.sout(sout),
-									   .sin(sin));
+										.sout(sout));
 
 		sdramburst sdramburst( .clk(dram_clk_2),
 								.ce(sd_ce),
