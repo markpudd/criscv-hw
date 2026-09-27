@@ -15,3 +15,9 @@ quartus/
 *.sof
 *.pof
 *.bak
+*.vcd
+*.out
+*.hex
+*.asm
+.DS_Store
+IS42*

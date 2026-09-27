@@ -22,13 +22,16 @@ module top(input  mclk,
 				output wire per_led,
 				output [3:0]r,
 				output [3:0]g,
-				output [3:0]b,
-				output vsync,
-				output hsync);
+				output hsync,
+				
+			    output spi_clk,
+				output spi_out,
+				input  spi_sin,
+				output spi_cs);
 
 					
 	wire [31:0] address;	
-	wire rw_req;	
+	
 	wire rw;				
 	wire [31:0] write_data;
 	wire [1:0] size;
@@ -37,8 +40,7 @@ module top(input  mclk,
 	wire [31:0] mread_data;
 	wire [31:0] pread_data;
 	wire [31:0] dread_data;
-	wire  rec;
-//	wire drec;
+
 	wire sdrec;
 	wire prec;
 	wire dram_clkp;
@@ -94,7 +96,7 @@ module top(input  mclk,
 					.c0(dram_clk),
 					.c1(dram_clk_2));
 					
-	// Bus Arb - TODO move into SDRAM where it should be
+	// Bus Arb - TODO move into MM where it srwhould be
 	reg ram_arb;		
 	reg sd_rw_req;
 	
@@ -107,7 +109,7 @@ module top(input  mclk,
 		end
 		else
 		begin
-			if(!sd_bursting && !sd_rw_req) begin
+			if(~sd_bursting && ~sd_rw_req) begin
 				if(sd_rw_req_v ==1) begin
 					ram_arb<=1'b0;
 					sd_rw_req<=1'b1;
@@ -130,25 +132,33 @@ module top(input  mclk,
 	assign sd_write_data = sd_write_data_mmu;
 	assign sd_rw = ram_arb ? sd_rw_mmu : 1'b0;
 	assign sd_bursting_mmu = sd_bursting & ram_arb;
-	assign sd_bursting_v = sd_bursting & !ram_arb;
+	assign sd_bursting_v = sd_bursting & ~ram_arb;
 	assign sd_ce = 1'b1;
 	assign sd_burst_len = ram_arb ? sd_burst_len_mmu :sd_burst_len_v;
 
 			
 	assign read_data = ~address[31]? dread_data : pread_data;
 	
-	assign rec = ~address[31]?  sdrec: 
-					~address[15] ?
-				 vga_cmd_done : prec;
+	wire s_valid_mmu;
+	
+	assign s_valid = ~address[31]?  s_valid_mmu: 
+			/*		~address[15] ?
+				 vga_cmd_done : */ prec;
 										
-	assign vga_cmd_write =address[31] & rw_req & rw & ~address[15];
+	assign vga_cmd_write =address[31] & m_valid & rw & ~address[15];
 	
 	assign mem_led =sdrec;
 
 	assign per_led =prec;
-					
-/*
-					
+			
+	wire sd_init_done;
+	wire m_ready;
+	
+	wire m_valid;
+	wire s_valid;
+	
+	
+				/*	
 	vga vga(        .clk(dram_clk_2),	
 					    .vclk(vclk),
 						 .reset(reset),
@@ -176,27 +186,33 @@ module top(input  mclk,
 				  .led(led),
 				  .crash(crash),
 				  .mem_address(address),
-				  .mem_rw_req(rw_req),
 				  .mem_rw(rw),
 				  .mem_write_data(write_data),
 				  .mem_size(size),
 				  .mem_read_data(read_data),
-				  .mem_rec(rec));
 				  
-		  
+				  .m_valid(m_valid),
+				  .s_valid(s_valid),
+				  
+				  .sd_init_done(sd_init_done));
+				  
+	
 
-
-		mmu mmu(.clk(cache_clk),
-						.mclk(dram_clk_2),
+		mmu mmu(.clk(cpu_clk),
 						.reset(reset),
+						
+						
 						.address(address),
-						.rw_req(rw_req),
 						.rw(rw),
 						.write_data(write_data),
 						.size(size),
 						.read_data(dread_data),
-						.data_valid(sdrec),
-						.busy(mmu_busy),
+
+						
+						.m_valid(m_valid),
+						.s_valid(s_valid_mmu),
+
+				
 						
 						.sd_ce(sd_ce_mmu),
 						.sd_address(sd_address_mmu),
@@ -214,18 +230,21 @@ module top(input  mclk,
 	 peripherals	 peripherals(.clk(cpu_clk),
 										.reset(reset),				 
 										.address(address),
-										.rw_req(rw_req),
+										.rw_req(m_valid),
 										.rw(rw),
 										.write_data(write_data),
 										.size(size),
 										.read_data(pread_data),
 										.prec(prec),
-										.port(port),
+										.port(port),			
 										.sout(sout),
-									   .sin(sin));
+									   .sin(sin),
+									   .spi_clk(spi_clk),
+									   .spi_out(spi_out),
+									   .spi_sin(spi_sin),
+									   .spi_cs(spi_cs));
 
-
-		sdramburst sdramburst( .clk(dram_clk_2),
+		sdramburst sdramburst( .clk(cpu_clk),
 								.ce(sd_ce),
 								 .reset(reset),
 								 .address(sd_address),
@@ -247,7 +266,8 @@ module top(input  mclk,
 							.dram_ras_n(dram_ras_n),
 							.dram_cs_n(dram_cs_n),
 							.dram_ba0(dram_ba0),
-							.dram_ba1(dram_ba1));
+							.dram_ba1(dram_ba1),
+							.init_done(sd_init_done));
 										
 /*
 	 	vga vga( .vclk(vclk),		 

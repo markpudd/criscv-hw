@@ -1,5 +1,21 @@
 # Synthesizable RISC-V verilog
 
+## Update
+
+Finally upddate after a long break.  More to come but headlines are:-
+
+   - Move to a 3 stage pipeline from the original FSM.   Some of the stages have a few extra clock cycles but these should be reduced soon.
+   - L1 Instruction cache has been temporarily removed
+   - Requires alignement of memory
+   - Trap handling fixed (only available for ECALL)
+   - SPI peripheral added
+   - More robust UART
+   - Updated bootloader (SD card one coming)
+   - Big reduction in LE's, core is ~4000.
+   - Increase number of testbenches
+
+
+
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
 If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM

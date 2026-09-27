@@ -9,6 +9,7 @@ module sdramburst (
 				output wire[15:0] read_data,
 				input wire[7:0] burst_len,
 				output data_bursting,
+
 				
 				input	  dclk,
 				inout [15:0] dram_dq,
@@ -20,7 +21,8 @@ module sdramburst (
 				output wire dram_ras_n,
 				output wire dram_cs_n,
 				output wire dram_ba0,
-				output wire dram_ba1);
+				output wire dram_ba1,
+				output init_done);
 				
 localparam 	 INITIAL = 5'd0,
 				 IDLE = 5'd1,
@@ -117,6 +119,7 @@ assign dram_cs_n = 1'b0;
 
 
 reg wc;
+assign init_done = ~(cState==START | cState ==INITIAL) ;
 		
 // Deal with request
 always@(posedge clk) begin
