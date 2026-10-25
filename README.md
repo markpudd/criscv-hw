@@ -13,7 +13,7 @@ Finally update after a long break.  More to come but headlines are:-
    - Updated bootloader now with SD card
    - Big reduction in LE's, core is ~4000.
    - Increase number of testbenches
-   - Improved memory reads so sum instructions are executed in 2 cycles which likely drop to 1 with the next update.
+   - Improved memory reads so some instructions are executed in 2 cycles which likely drop to 1 with the next update.
 
 
 
