@@ -38,7 +38,7 @@ module decode(input             mclk,
               output reg [31:0] IDEX_rs1,
               output reg [31:0] IDEX_rs2,
               output reg [6:0]  IDEX_opcode,
-              output reg [3:0]  IDEX_funct3,
+              output reg [2:0]  IDEX_funct3,
               output reg        IDEX_modbit,
               output reg [31:0] IDEX_imm,
               output reg [11:0] IDEX_csr,
@@ -69,15 +69,13 @@ module decode(input             mclk,
 	wire [2:0] funct3;
 	
 	
-  reg [31:0]  regs [31:0] ;
+  (* ramstyle = "logic" *)  reg [31:0]  regs [31:0] ;
 
   // write back from EX
   always @ ( posedge mclk)
   begin
     if (rf_we && rf_waddr !=0 )
       regs[rf_waddr] <= rf_wdata;
-	//   rs1 = regs[IFID_inst[19:15]];
-  // rs2 = regs[IFID_inst[24:20]];
   end
 
   // ID - Instrruction Decode
@@ -86,7 +84,7 @@ module decode(input             mclk,
   assign imm_b = $signed({IFID_inst[31] ,IFID_inst[7],IFID_inst[30:25],IFID_inst[11:8], 1'b0});
   assign imm_j = $signed({IFID_inst[31],  IFID_inst[19:12], IFID_inst[20], IFID_inst[30:21] ,1'b0 });
   assign imm_u = IFID_inst & 32'hFFFFF000;
-    assign opcode = IFID_inst[6:0];
+  assign opcode = IFID_inst[6:0];
   assign rd_index = IFID_inst[11:7];
   assign funct3 = IFID_inst[14:12];
   assign modbit =IFID_inst[30];
@@ -113,9 +111,6 @@ module decode(input             mclk,
 
   reg [31:0] imm_mux;
 
-
- // assign ID_ready = EX_ready;
-
   always @(*)
   begin
     case (opcode)
@@ -135,10 +130,7 @@ module decode(input             mclk,
   end
 
 assign ID_ready = EX_ready;
-//always @(posedge mclk) begin
-//  $display("%0t EX_ready=%b IFID_valid=%b sys_ready=%b", $time, EX_ready, IFID_valid, sys_ready);
-//  $strobe ("%0t   -> IDEX_valid after edge = %b", $time, IDEX_valid);
-//end
+
 
   always @ ( posedge mclk)
   begin
@@ -155,7 +147,7 @@ assign ID_ready = EX_ready;
     begin
          if ((EX_ready && IFID_valid) || idex_flush)  // normal case: latch new instruction
       begin
-		if(~idex_flush)
+		//if(~idex_flush)
         IDEX_rs1 <= rs1_fwd;
         IDEX_rs2 <= rs2_fwd;
         IDEX_opcode <= opcode;
@@ -171,17 +163,15 @@ assign ID_ready = EX_ready;
       else if (EX_ready && ~IFID_valid)
       begin
       IDEX_opcode <= 7'b0010011;  // ADDI - decodes as a genuine no-op in EX
-		  //IDEX_opcode <= 7'b0;
 		  IDEX_rd     <= 5'b0;
 		  IDEX_funct3 <= 3'b0;
 		  IDEX_imm    <= 32'b0;
 		  IDEX_rs1    <= 32'b0;
 		  IDEX_rs2    <= 32'b0;
-		  IDEX_pc     <= 32'b0;
+		  IDEX_pc     <= IFID_pc;
 		  IDEX_csr    <= 12'b0;
 		  IDEX_modbit <= 1'b0;
 		  IDEX_valid  <= 1'b1;
-      //ID_ready  <= 1'b1;
       end
      
 

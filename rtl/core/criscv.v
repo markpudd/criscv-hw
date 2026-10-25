@@ -10,8 +10,23 @@ module criscv(input  mclk,
                 input  reset,
                 input  cpu_reset,
                 output reg led,
-                output reg crash,
+                output wire crash,
 
+                // Instruction Path Interface
+                output wire [31:0] inst_addr,
+                input wire [31:0] inst_out,
+                output wire        inst_m_valid,  // master valid
+                input            inst_s_valid,
+
+                // Data Path Interface
+                output wire [31:0] data_addr,
+                output wire [31:0] data_in,
+                output wire        data_we,       // Write enable for data path
+                input wire [31:0] data_out,
+                output wire[1:0]   data_size,
+                output wire        data_m_valid,  // master valid
+                input            data_s_valid,
+                /*
                 output reg [31:0] mem_address,
                 output reg mem_rw,
                 output [31:0] mem_write_data,
@@ -20,7 +35,7 @@ module criscv(input  mclk,
 
                 output reg   m_valid,
                 input        s_valid,
-
+                */
                 input sd_init_done);
 
 
@@ -52,16 +67,10 @@ module criscv(input  mclk,
   // Carried over from the original, currently unused
   reg [31:0] delay;
   reg [31:0] instruction;
-  
+
   reg [31:0] mpx_reg;
-  /*
-    reg [31:0] s_req_addr;
-    reg        s_req_ready;
-    wire [31:0] s_rsp_data;
-    wire        s_rsp_valid;
-  */
 
-
+  assign crash = 1'b0;
   //---------------------------------------------------------------------------
   // Inter-stage nets
   //---------------------------------------------------------------------------
@@ -74,7 +83,7 @@ module criscv(input  mclk,
   wire [31:0] IDEX_rs1;
   wire [31:0] IDEX_rs2;
   wire [6:0]  IDEX_opcode;
-  wire [3:0]  IDEX_funct3;
+  wire [2:0]  IDEX_funct3;
   wire        IDEX_modbit;
   wire [31:0] IDEX_imm;
   wire [11:0] IDEX_csr;
@@ -119,66 +128,24 @@ module criscv(input  mclk,
   always @(*)
   begin
     //stall = req_d | (busy & owner_d);
-     stall = 0; // m_valid_i | m_valid_d;  // stall if there is a memory request//  & ~s_valid; //(mem_rw_req_d & ~mem_rec_d) | (mem_rw_req_i & ~mem_rec_i);
+    stall = 0; // m_valid_i | m_valid_d;  // stall if there is a memory request//  & ~s_valid; //(mem_rw_req_d & ~mem_rec_d) | (mem_rw_req_i & ~mem_rec_i);
     // Flush on branch
-   // ifid_flush = branch_taken & ~stall;
-     idex_flush = branch_taken; //& ~stall;
+    // ifid_flush = branch_taken & ~stall;
+    idex_flush = branch_taken; //& ~stall;
   end
 
 
-  //---------------------------------------------------------------------------
-  // Mem Arb --  AI generated this arb originally and TBH it sucks.......
-  //---------------------------------------------------------------------------
-  wire [31:0] addr_i, addr_d;
-  wire [1:0]  size_i, size_d;
-  wire        m_valid_i,  m_valid_d;
-  wire        rw_d;              // I-side is always a read
 
-  reg         busy;              // an access is outstanding
-  reg         owner_d;           // 1 = D-side owns the outstanding access
-
-  wire        pick_d = m_valid_d;    // D priority
-  wire        s_valid_i = s_valid & busy & ~owner_d;
-  wire        s_valid_d = s_valid & busy &  owner_d;
-
-  always @(posedge mclk)
-  begin
-    if (~reset)
-    begin
-      busy       <= 1'b0;
-      owner_d    <= 1'b0;
-      m_valid <= 1'b0;
-    end
-    else if (busy)
-    begin
-      if (s_valid)
-			//if((~m_valid_i & ~owner_d) | (~m_valid_d & owner_d))  // marginally easier to read
-			if(~m_valid_i  || ~m_valid_d )  // marginally easier to read
-			begin
-			  busy       <= 1'b0;
-			  m_valid <= 1'b0;
-			end
-    end
-    else if (m_valid_i | m_valid_d)
-    begin
-      busy        <= 1'b1;
-      owner_d     <= pick_d;
-      mem_address <= pick_d ? addr_d : addr_i;
-      mem_size    <= pick_d ? size_d : size_i;
-      mem_rw      <= pick_d ? rw_d   : 1'b0;
-      m_valid  <= 1'b1;
-    end
-  end
 
 
   //---------------------------------------------------------------------------
   // Pipeline stages
   //---------------------------------------------------------------------------
 
-wire ID_ready;
-wire IFID_valid;
-wire EX_ready;
-wire        IDEX_valid;
+  wire ID_ready;
+  wire IFID_valid;
+  wire EX_ready;
+  wire        IDEX_valid;
   //  IF - Instruction Fetch
   fetch u_fetch(.mclk(mclk),
                 .reset(reset),
@@ -191,16 +158,16 @@ wire        IDEX_valid;
                 .branch_taken(branch_taken),
                 .branch_target(branch_target),
 
-                .addr_i(addr_i),
-                .size_i(size_i),
-                .mem_read_data(mem_read_data),
 
-                .m_valid(m_valid_i),
-                .s_valid(s_valid_i),
+                .addr_i(inst_addr),
+                .mem_read_data(inst_out),
+
+                .m_valid(inst_m_valid),
+                .s_valid(inst_s_valid),
 
                 .IFID_inst(IFID_inst),
                 .IFID_pc(IFID_pc),
-                
+
                 // Pipeline IFID Handshake
                 .IFID_valid(IFID_valid),
                 .ID_ready(ID_ready));
@@ -226,7 +193,7 @@ wire        IDEX_valid;
                   .csr(csr),
                   .uimm(uimm),
                   .rd_index(rd_index),
-                  
+
                   .IDEX_rs1(IDEX_rs1),
                   .IDEX_rs2(IDEX_rs2),
                   .IDEX_opcode(IDEX_opcode),
@@ -238,12 +205,12 @@ wire        IDEX_valid;
                   .IDEX_pc(IDEX_pc),
 
 
-                // Pipeline IFID Handshake
+                  // Pipeline IFID Handshake
                   .IFID_valid(IFID_valid),
                   .ID_ready(ID_ready),
 
 
-                // Pipeline IFEX Handshake
+                  // Pipeline IFEX Handshake
                   .IDEX_valid(IDEX_valid),
                   .EX_ready(EX_ready));
 
@@ -276,22 +243,23 @@ wire        IDEX_valid;
                     .branch_taken(branch_taken),
                     .branch_target(branch_target),
 
-                    .mem_read_data(mem_read_data),
 
-                    .mem_write_data(mem_write_data),
+                    .mem_read_data(data_out),
 
-                    .mem_address_d(addr_d),
-                    .mem_size_d(size_d),
-                    .mem_rw_d(rw_d),
+                    .mem_write_data(data_in),
 
-                    .m_valid_d(m_valid_d),
-                    .s_valid_d(s_valid_d),
-                    
-                    
-                  // Pipeline IFEX Handshake
+                    .mem_address_d(data_addr),
+                    .mem_size_d(data_size),
+                    .mem_rw_d(data_we),
+
+                    .m_valid_d(data_m_valid),
+                    .s_valid_d(data_s_valid),
+
+
+                    // Pipeline IFEX Handshake
                     .IDEX_valid(IDEX_valid),
                     .EX_ready(EX_ready));
-                  
+
 
 
 

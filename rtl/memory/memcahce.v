@@ -128,12 +128,12 @@ module memcache(input clk,
   assign cache_hit1 = (cache_tag == cl_q[1][15:1]);
   assign cache_hit_set = cache_hit0 ? 1'b0 : 1'b1;
 
-  assign ac_wren[0] = (rw & (cState == DATA_FINISH) & ~cache_hit_set);
-  assign ac_wren[1] =  (rw & (cState == DATA_FINISH) & cache_hit_set);
+  assign ac_wren[0] = (rw & data_valid & ~cache_hit_set);
+  assign ac_wren[1] =  (rw & data_valid & cache_hit_set);
 
   assign c_q=ac_q[cache_hit_set];
 
-  assign data_valid = (cState == DATA_FINISH);
+  assign data_valid =(cState == DATA_FINISH) || (cState==CACHE_CHECK && (cache_hit0 || cache_hit1));
   assign busy=(cState  != IDLE);
   //assign c_address = (cState != LOAD_PAGE && cState != STORE_PAGE) ? cache_data_address : cache_data_base+a_count[4:1];
   assign c_address = cache_data_address;
@@ -228,7 +228,7 @@ module memcache(input clk,
 
     if(cState == CACHE_CHECK)
     begin
-      a_count <= 0;
+      a_count <= -6'd1;;
       if (!cl_q[0][0])
         replace_index <= 1'b0;
       else if (!cl_q[1][0])
@@ -256,13 +256,13 @@ module memcache(input clk,
       IDLE:
       begin
         if(rw_req && ce)
-          nState = CACHE_CHECK_PRE;
+          nState = CACHE_CHECK;
         else
           nState = IDLE ;
       end
       REQUEST:
       begin
-        nState = CACHE_CHECK_PRE ;
+        nState = CACHE_CHECK ;
       end
       CACHE_CHECK_PRE:
       begin      //  wait cl read
@@ -271,7 +271,7 @@ module memcache(input clk,
       CACHE_CHECK:
       begin
         if(cache_hit0 || cache_hit1)
-          nState = DATA_FINISH;
+          nState = IDLE;
         //	else if(~cl_q[0][0] || ~cl_q[1][0])	nState = LOAD_PREP;
         else
           nState = STORE_PAGE;

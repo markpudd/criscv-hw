@@ -2,7 +2,7 @@
 
 ## Update
 
-Finally upddate after a long break.  More to come but headlines are:-
+Finally update after a long break.  More to come but headlines are:-
 
    - Move to a 3 stage pipeline from the original FSM.   Some of the stages have a few extra clock cycles but these should be reduced soon.
    - L1 Instruction cache has been temporarily removed
@@ -10,11 +10,16 @@ Finally upddate after a long break.  More to come but headlines are:-
    - Trap handling fixed (only available for ECALL)
    - SPI peripheral added
    - More robust UART
-   - Updated bootloader (SD card one coming)
+   - Updated bootloader now with SD card
    - Big reduction in LE's, core is ~4000.
    - Increase number of testbenches
+   - Improved memory reads so sum instructions are executed in 2 cycles which likely drop to 1 with the next update.
 
 
+
+
+
+## Info   
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
@@ -27,9 +32,10 @@ If your looking to build and run DOOM, basic instructions are here https://githu
 * 128K 2 Way associative L2 cache
 * SDRAM controller
 * UART
+* SPI
 * Video Output- 256 color palatte (4bit per chanel) 320x200 scaled VGA output
-* Basic bootloader with basic System functions implemented (via ECALL)
-* 19,140 Logic elements when synthised on Cyclone IV E (22,230 avalible LEs)
+* Basic bootloader with basic System functions implemented (via ECALL) now with support to load for SD card via SPI
+* ~4000 Logic elements when synthised on Cyclone IV E (22,230 avalible LEs)
 * Tested on DE0-Nano
 
 These specs are based on running on Cyclone IV but this could be reconfigure for other FPGA's.
@@ -57,13 +63,15 @@ The video code uses a lot of resources mainly due to the paltte and scanline buf
 
 ## Bootloader
 
-There is a basic binary bootloader.  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   You can the send this over serial at 230400.   The code will be loaded at 10000 and use SDRAM (with cache infront).
+There is a basic binary bootloader.  To use, this build a binary as below use outtobin.py to add the length to the begining of the file.   
+
+The boot.c uses the SPI peripheral at 4Mz to try and load a boot file which can be built from the bootbin directory with and the written to SD card with   dd if=/Volumes/fpga/bootbin/build/boot.elf  of={disk id where card is} bs=512 seek=1 conv=sync.  The bootbin build will give basic read access via FatFS.  If you cross compile some code you should be able to copy to SD card an run.
 
 There is basic ECALL support.  The bootloader has some basic system call implementations so code can execute some system functions.
 
 ## How to get it running
 
-This is a simple 3 state FSM (Fetch, decode, execute), with an extra state for memory commands (load and store), not everything has been tested so there is likely issues with some commands.
+I intend to create some videos on how to get this up and running and better docs, but at a high level for Cyclones you need to do the following.  I'm in the process of updating the Verilog to System verilog with added suppport for Xilinix.
 
 This has been tested on a DE0-Nano board (Cyclone IV).  The memory controller (memory_con.v) can use a generated MegaWizard IP set up as:-
 
@@ -71,8 +79,6 @@ This has been tested on a DE0-Nano board (Cyclone IV).  The memory controller (m
           - 16-bit width (4096 size but you can add more, stack may need changed)
           - Q enabled
           - Module name ram
-
-(Likely redo the memory controller as it was done in a rush to get things working)
 
 Steps to get it running using Quartus:-
 
@@ -91,19 +97,19 @@ Once started reset will need to be set low then high to get things running. To b
 
 ## Performance /  Memory
 
-The memory performance is still not optimize.  Using the MMU SDRAM will be cached, but there is a still a bit of work to do to reduce cachce access clock cycles.
+There has been a number of memory optimisations leadig to less stalls and some instrution require only 2 cycles.  This will likely drop to 1 cycle in the near future, which is why the old L1 distruted RAM was removed.  I will probably add the option of dualport ram for the caches to minimize the memory stalls.
 
-The memory_cont.v is still used to access memory under 0x10000, however this will likely change so that all access will go through MMU.   Stack is currently always located a 0x1ffc.
+The inition boot.hex is loaded in low ram (under 0x10000) and anything above this uses SDRAM.
 
 
 ## TODO
 
 Few thing likely to:-
 
-    - Add some pipelineing and rewrite all the memory verilog  
+    ~~- Add some pipelineing and rewrite all the memory verilog~~  
     - Create a proper memory layout
     - Add EBREAK/ECALL and FENCE implementations (short term link stdfn.c and build code with --specs=nano.specs)
     - Add some more peripherals
-    - Build on a different FPGA (Have a Lattice board so may try that)
+    - Build on a different FPGA - Xilinx will be next
     - Dual core
     - Buffering and SW config in UART

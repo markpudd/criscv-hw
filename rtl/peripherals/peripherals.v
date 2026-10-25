@@ -22,9 +22,10 @@ module peripherals(input clk,
 
   reg  ss;
   wire  rec_valid;
-  reg  [7:0] sdata;
+
   //reg  [2:0] tdelay;
 
+  wire spi_busy;
   reg [31:0] i_read_data;
   wire [7:0] rec_data;
   wire [7:0] spi_rec_data;
@@ -39,7 +40,7 @@ module peripherals(input clk,
              .dout(sout),
              .reset(reset),
              .send_request(ss),
-             .data(sdata),
+             .data(uart_data),
              .busy(uart_busy),
              .rec_data(rec_data),
              .rec_valid(rec_valid),
@@ -50,7 +51,7 @@ module peripherals(input clk,
 
   spi spi(.sclk(clk),
           .reset(reset),
-          .in_data(sdata),
+          .in_data(spi_data),
           .out_data(spi_rec_data),
 
           .send_request(spi_req),
@@ -64,6 +65,9 @@ module peripherals(input clk,
 
   assign read_data = i_read_data;
   assign prec = i_prec ;
+  reg [7:0] uart_data;
+  reg [7:0] spi_data;
+  
 
 
   reg [1:0] pstate=3'h0;
@@ -97,7 +101,7 @@ module peripherals(input clk,
           end
           if(address == 32'hffffff01 && ss ==0)
           begin
-            sdata <= write_data[7:0];
+            uart_data <= write_data[7:0];
             ss<=1;
             i_prec <=1;
             pstate <= 2'b01;
@@ -123,7 +127,7 @@ module peripherals(input clk,
           //SPI
           if(address == 32'hffffff10 && spi_req ==0)
           begin
-            sdata <= write_data[7:0];
+            spi_data <= write_data[7:0];
             spi_req<=1;
             i_prec <=1;
             pstate <= 2'b01;
@@ -152,13 +156,13 @@ module peripherals(input clk,
       2'b01:
       begin
 
-        //i_prec <=0;
+        i_prec <=0;
         pstate <= 2'b00;
       end
 
       2'b10:
       begin
-        //i_prec <=0;
+        i_prec <=0;
         pstate <= 2'b00;
       end
     endcase

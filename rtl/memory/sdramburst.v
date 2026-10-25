@@ -85,7 +85,7 @@ reg [31:0] mem_address;
 wire [1:0] bank;
 wire [12:0] row_address;
 wire [12:0] column_address;
-wire odd;
+//wire odd;
 reg nop;
 
 
@@ -93,7 +93,7 @@ reg nop;
 assign column_address =  {3'b0000,mem_address[9:1]};
 assign row_address =  {mem_address[22:10]};
 assign bank = mem_address[24:23];
-assign odd=mem_address[0];
+//assign odd=mem_address[0];
 
 assign data_bursting =(cState==WRITE_COL || cState==WRITE_COLB || cState==READ_COLB|| cState==READ_COLA );
 

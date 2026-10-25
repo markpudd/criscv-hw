@@ -8,7 +8,7 @@ module alu(input wire clk,
 			  input wire [31:0] rs1,
 			  input wire [31:0] rs2,
 			  output reg [31:0] rd,
-			  output wire comp);
+			  output wire busy);
 	
 	
 	
@@ -37,7 +37,7 @@ module alu(input wire clk,
 	wire [31:0] uquotient;
 	wire [31:0] uremain;
 	
-	assign comp =(cState == DONE);
+	assign busy =(cState != DONE);
 
 		
 		
@@ -57,10 +57,19 @@ module alu(input wire clk,
 	// RV32I	
 	
 	wire is_imm = (opcode == 7'b0010011);   // OP-IMM
+	wire rv32m_inst = (opcode == 7'b0110011  & imm[5]) ;   // OP-IMM
 	wire is_reg = (opcode == 7'b0110011);   // OP
+   
+	wire alu_imm    = is_imm;
+	wire rv32i_inst = is_imm |  (is_reg & ~imm[5])  ;  // imm[5]==funct7[0]==RV32M - we really need to fix this
+    
 
-	assign alu_imm    = is_imm;
-	assign rv32i_inst = is_imm | (is_reg & ~imm[5]);  // imm[5]==funct7[0]==RV32M
+	wire a_signed = (funct3 == 3'b001) || (funct3 == 3'b010); // MULH, MULHSU
+	wire b_signed = (funct3 == 3'b001);                        // MULH only
+
+	wire signed [32:0] a = {a_signed & rs1[31], rs1};
+	wire signed [32:0] b = {b_signed & rs2[31], rs2};
+	wire signed [65:0] prod = a * b;
 
 	always @(*) begin
 		rd = 32'b0;                          // default - no inferred latch
@@ -97,16 +106,19 @@ module alu(input wire clk,
 					3'b111 :   rd = rs1&rs2;      // AND
 				endcase
 			end
-			/*if(mult_inst)
+		if(rv32m_inst)
+			begin
 			case (funct3)
-					3'b000 :   rd = (rs1 * rs2); // MUL
-					3'b001 :   rd =  ({ {32{rs1[31]}},rs1} * { {32{rs2[31]}},rs2}) >>32;	// MULH
-					3'b010 :   rd = ({ {32{rs1[31]}},rs1}  * {32'b0,rs2}) >>32;	// MULHSU
-					3'b011 :   rd = ({32'b0,rs1} * {32'b0,rs2}) >>32;	// MULHU
-			endcase*/
+				3'b000:  rd = prod[31:0];   // MUL
+				3'b001,
+				3'b010,
+				3'b011:  rd = prod[63:32];  // MULH, MULHSU, MULHU
+				default: rd = 32'b0;        // DIV/REM handled elsewhere
+	    	endcase
+		end
 	end
 	
-	reg mult_inst;
+
 
 
 	

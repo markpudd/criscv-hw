@@ -49,12 +49,11 @@ module execute_tb;
   logic [5:0]  IDEX_rd;
   logic [31:0] IDEX_pc;
   logic        IDEX_valid;
-  logic [31:0] rs1_data;
   logic [11:0] csr;
   logic [4:0]  uimm;
   logic [5:0]  rd_index;
   logic [31:0] mem_read_data;
-  logic        mem_rec;
+  logic        s_valid_d;
 
   wire        rf_we;
   wire [5:0]  rf_waddr;
@@ -65,7 +64,8 @@ module execute_tb;
   wire [31:0] mem_address_d;
   wire [1:0]  mem_size_d;
   wire        mem_rw_d;
-  wire        mem_rw_req_d;
+  wire        m_valid_d;
+  wire        EX_ready;
 
   integer checks;
   integer failures;
@@ -84,8 +84,6 @@ module execute_tb;
     .IDEX_csr(IDEX_csr),
     .IDEX_rd(IDEX_rd),
     .IDEX_pc(IDEX_pc),
-    .IDEX_valid(IDEX_valid),
-    .rs1_data(rs1_data),
     .csr(csr),
     .uimm(uimm),
     .rd_index(rd_index),
@@ -95,12 +93,14 @@ module execute_tb;
     .branch_taken(branch_taken),
     .branch_target(branch_target),
     .mem_read_data(mem_read_data),
-    .mem_rec(mem_rec),
     .mem_write_data(mem_write_data),
     .mem_address_d(mem_address_d),
     .mem_size_d(mem_size_d),
     .mem_rw_d(mem_rw_d),
-    .mem_rw_req_d(mem_rw_req_d)
+    .m_valid_d(m_valid_d),
+    .s_valid_d(s_valid_d),
+    .IDEX_valid(IDEX_valid),
+    .EX_ready(EX_ready)
   );
 
   always #5 mclk = ~mclk;
@@ -123,7 +123,7 @@ module execute_tb;
       sys_ready = 1'b0;
       stall = 1'b0;
       IDEX_valid = 1'b0;
-      mem_rec = 1'b0;
+      s_valid_d = 1'b0;
       @(posedge mclk);
       #1;
       reset = 1'b1;
@@ -143,12 +143,11 @@ module execute_tb;
       IDEX_rd = 6'b0;
       IDEX_pc = 32'b0;
       IDEX_valid = 1'b0;
-      rs1_data = 32'b0;
       csr = 12'b0;
       uimm = 5'b0;
       rd_index = 6'b0;
       mem_read_data = 32'b0;
-      mem_rec = 1'b0;
+      s_valid_d = 1'b0;
       stall = 1'b0;
     end
   endtask
@@ -249,7 +248,7 @@ module execute_tb;
     IDEX_rd = 6'd9;
     @(posedge mclk);
     #1;
-    check(mem_rw_req_d === 1'b1, "load starts a data request");
+    check(m_valid_d === 1'b1, "load starts a data request");
     check(mem_rw_d === 1'b0, "load request is a read");
     check(mem_address_d === 32'h00001014, "load address is base plus immediate");
     check(mem_size_d === 2'b10, "LW requests a word");
@@ -257,15 +256,17 @@ module execute_tb;
     // A level-valid request must remain asserted until the memory handshake.
     @(posedge mclk);
     #1;
-    check(mem_rw_req_d === 1'b1, "load request remains asserted before acknowledgment");
+    check(m_valid_d === 1'b1, "load request remains asserted before acknowledgment");
     check(mem_address_d === 32'h00001014, "load request holds its address before acknowledgment");
 
     mem_read_data = 32'hAABBCCDD;
-    mem_rec = 1'b1;
+    s_valid_d = 1'b1;
+    #1;
+    check(EX_ready === 1'b1, "load response makes execute ready");
+    check(rf_we === 1'b1 && rf_wdata === 32'hAABBCCDD, "load response presents returned data for writeback");
     @(posedge mclk);
     #1;
-    check(mem_rw_req_d === 1'b0, "load response clears the data request");
-    check(rf_we === 1'b1 && rf_wdata === 32'hAABBCCDD, "load response writes returned data");
+    check(m_valid_d === 1'b0, "load response clears the data request");
 
     // This is a deliberately expected failure while execute is being fixed:
     // an acknowledgment without an outstanding request must not write a rd.
@@ -276,10 +277,10 @@ module execute_tb;
     IDEX_funct3 = 3'b010;
     IDEX_rd = 6'd10;
     mem_read_data = 32'h11223344;
-    mem_rec = 1'b1;
+    s_valid_d = 1'b1;
     #1;
-    check(rf_we === 1'b0, "EXPECTED FAIL: unsolicited ack");
-    mem_rec = 1'b0;
+    check(rf_we === 1'b0, "unsolicited acknowledgment does not write a register");
+    s_valid_d = 1'b0;
 
     reset_execute;
     IDEX_valid = 1'b1;
@@ -290,7 +291,7 @@ module execute_tb;
     IDEX_imm = 32'h00000006;
     @(posedge mclk);
     #1;
-    check(mem_rw_req_d === 1'b1, "store starts a data request");
+    check(m_valid_d === 1'b1, "store starts a data request");
     check(mem_rw_d === 1'b1, "store request is a write");
     check(mem_address_d === 32'h00002006, "store address is base plus immediate");
     check(mem_write_data === 32'h0000BEEF, "store carries source register data");
@@ -312,10 +313,11 @@ module execute_tb;
     IDEX_valid = 1'b1;
     stall = 1'b1;
     #1;
-    check(rf_we === 1'b0, "stall suppresses register write");
+    check(rf_we === 1'b1, "stall does not gate ALU writeback in the current execute interface");
 
     $display("execute_tb: %0d checks, %0d failures", checks, failures);
-    $display("Failures are reported for execute debugging and do not stop simulation.");
+    if (failures != 0)
+      $fatal(1, "execute_tb detected unexpected behavior");
     $finish;
   end
 endmodule

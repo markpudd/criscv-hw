@@ -14,7 +14,7 @@ module spi(input wire sclk,
 
 
   localparam CLOCK = 50000000;
-  localparam SCLK_SPEED = 500000;
+  localparam SCLK_SPEED = 4000000;
   localparam SPI_TIME_DELAY = CLOCK/SCLK_SPEED/2;  // 2 transition per clock
 
   localparam CS_IDLE= 1'b1;
@@ -88,14 +88,14 @@ module spi(input wire sclk,
           cs <= CS_IDLE;
          // out_data <= out_byte;
           dout <= 0;
-           bit_pos <= bit_pos - 1;
+           bit_pos <= bit_pos - 5'd1;
         end
         else
         begin
           if(out_clk == DS_EDGE_CHANGE )
           begin
             dout <= in_byte[bit_pos[3:0]-1];
-            bit_pos <= bit_pos - 1;
+            bit_pos <= bit_pos -  5'd1;
           end
         end
 

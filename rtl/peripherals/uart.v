@@ -14,9 +14,9 @@ module uart(input wire sclk,
 
   localparam CLOCK = 50000000;
   localparam BAUD = 460800;
-  localparam UART_TIME_DELAY = CLOCK/BAUD;
-  localparam UART_TIME_RDELAY =  18'ha2c/12;
-  localparam UART_TIME_QDELAY = 18'h516/12;
+  localparam [17:0]  UART_TIME_DELAY = CLOCK/BAUD;
+ // localparam UART_TIME_RDELAY =  18'ha2c/18'd12;
+ // localparam UART_TIME_QDELAY = 18'h516/18'd12;
 
   // 75Mhz  clock
   //	localparam UART_TIME_DELAY = 16'h1f4c/24;
@@ -170,7 +170,7 @@ wire rx_edge = (rx_clean != rx_clean_delayed); // High for 1 cycle when data cha
        shiftin <= 9'h0;
       reccount <= 4'h0;
       idle <= 0;
-      rx_baud_count <= (UART_TIME_DELAY/2);
+      rx_baud_count <= (UART_TIME_DELAY/18'd2);
      end
    end
  	 else
@@ -179,7 +179,7 @@ wire rx_edge = (rx_clean != rx_clean_delayed); // High for 1 cycle when data cha
       shiftin <= 9'h0;
       reccount<=  4'h0;
       idle <= 0;
-      rx_baud_count <= (UART_TIME_DELAY/2);
+      rx_baud_count <= (UART_TIME_DELAY/18'd2);
     end
     else
     begin

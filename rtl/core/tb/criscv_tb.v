@@ -46,14 +46,28 @@ module criscv_tb;
   // DUT
   //---------------------------------------------------------------------------
   wire        led, crash;
+
+  wire [31:0] inst_addr;
+  wire [31:0] data_addr;
+  wire [31:0] data_in;
+  wire        data_we;
+  wire [1:0]  data_size;
+  wire        inst_m_valid;
+  wire        data_m_valid;
+
+  wire        inst_resp_valid;
+  wire        data_resp_valid;
+
   wire [31:0] mem_address;
   wire        mem_rw;
   wire [31:0] mem_write_data;
   wire [1:0]  mem_size;
-  wire        m_valid;
-
-  reg  [31:0] mem_read_data;
-  reg         s_valid;
+  wire        mem_req_valid;
+  wire [31:0] mem_read_data;
+  wire        mem_s_valid;
+  reg         mem_busy = 1'b0;
+  reg         mem_owner_data = 1'b0;
+  integer     reg_index;
 
   criscv dut (
     .mclk           (mclk),
@@ -61,87 +75,72 @@ module criscv_tb;
     .cpu_reset      (cpu_reset),
     .led            (led),
     .crash          (crash),
-    .mem_address    (mem_address),
-    .mem_rw         (mem_rw),
-    .mem_write_data (mem_write_data),
-    .mem_size       (mem_size),
-    .mem_read_data  (mem_read_data),
-    .m_valid        (m_valid),
-    .s_valid        (s_valid),
+    .inst_addr      (inst_addr),
+    .inst_out       (mem_read_data),
+    .inst_m_valid   (inst_m_valid),
+    .inst_s_valid   (inst_resp_valid),
+    .data_addr      (data_addr),
+    .data_in        (data_in),
+    .data_we        (data_we),
+    .data_out       (mem_read_data),
+    .data_size      (data_size),
+    .data_m_valid   (data_m_valid),
+    .data_s_valid   (data_resp_valid),
     .sd_init_done   (sd_init_done)
   );
 
   //---------------------------------------------------------------------------
-  // Behavioural memory: single shared byte array, 1 cycle of latency.
-  // Services both the instruction side and data side through the same
-  // arbitrated port that criscv.v exposes.
+  // Shared behavioural memory model for the split instruction/data ports.
+  // The core requests its own addresses; the testbench supplies them and the
+  // memory model returns the fetched data on the corresponding response strobe.
   //---------------------------------------------------------------------------
-  localparam MEM_BYTES = 1024;
-  reg [7:0] ram [0:MEM_BYTES-1];
+  mmu_sim_model #(
+    .MEM_BYTES(65536),
+    .RESP_LATENCY(1),
+    .MEM_INIT_FILE(""),
+    .WARN_ON_EARLY_DEASSERT(0)
+  ) mem (
+    .mclk        (mclk),
+    .reset       (reset),
+    .address     (mem_address),
+    .rw          (mem_rw),
+    .write_data  (mem_write_data),
+    .size        (mem_size),
+    .read_data   (mem_read_data),
+    .m_valid     (mem_req_valid),
+    .s_valid     (mem_s_valid)
+  );
 
-  // NOTE: s_valid is held HIGH as a level for as long as m_valid stays
-  // asserted - it only drops once the master releases the bus - exactly
-  // mirroring how the real mmu.v holds its DONE state ("assign s_valid =
-  // (cState==DONE) & m_valid;", staying in DONE while ~m_valid is false).
-  // A single-cycle s_valid PULSE looks equally reasonable on paper, but it
-  // deadlocks the top-level arbiter's busy-clear handshake in criscv.v,
-  // which needs to see s_valid still high on the cycle after the
-  // requesting stage's own internal m_valid has dropped.
-  always @(posedge mclk)
-  begin
-    
-    if (~reset)
-    begin
-      s_valid <= 1'b0;
-    end
-    else if (m_valid)
-    begin
-      if (!s_valid)
-      begin
-        s_valid <= 1'b1;
-        case (mem_size)
-          2'd0: mem_read_data <= {24'h0, ram[mem_address]};
-          2'd1: mem_read_data <= {16'h0, ram[mem_address+1], ram[mem_address]};
-          default: mem_read_data <= {ram[mem_address+3], ram[mem_address+2],
-                                      ram[mem_address+1], ram[mem_address]};
-        endcase
-
-        if (mem_rw)
-        begin
-          case (mem_size)
-            2'd0: ram[mem_address] <= mem_write_data[7:0];
-            2'd1:
-            begin
-              ram[mem_address]   <= mem_write_data[7:0];
-              ram[mem_address+1] <= mem_write_data[15:8];
-            end
-            default:
-            begin
-              ram[mem_address]   <= mem_write_data[7:0];
-              ram[mem_address+1] <= mem_write_data[15:8];
-              ram[mem_address+2] <= mem_write_data[23:16];
-              ram[mem_address+3] <= mem_write_data[31:24];
-            end
-          endcase
-        end
-      end
-      // else: hold s_valid/mem_read_data steady - don't re-latch or re-write
-    end
-    else
-    begin
-      s_valid <= 1'b0;              // master released the bus
+  always @(posedge mclk) begin
+    if (!reset) begin
+      mem_busy      <= 1'b0;
+      mem_owner_data <= 1'b0;
+    end else if (!mem_busy && (inst_m_valid || data_m_valid)) begin
+      mem_busy       <= 1'b1;
+      mem_owner_data <= data_m_valid;
+    end else if (mem_busy && mem_s_valid) begin
+      mem_busy <= 1'b0;
     end
   end
+
+  assign mem_req_valid = (inst_m_valid | data_m_valid) & ~mem_s_valid;
+  assign mem_address = (mem_busy ? mem_owner_data : data_m_valid) ?
+                       data_addr : inst_addr;
+  assign mem_rw = (mem_busy ? mem_owner_data : data_m_valid) ? data_we : 1'b0;
+  assign mem_write_data = (mem_busy ? mem_owner_data : data_m_valid) ?
+                          data_in : 32'h0;
+  assign mem_size = (mem_busy ? mem_owner_data : data_m_valid) ?
+                    data_size : 2'b10;
+
+  assign inst_resp_valid = mem_busy & ~mem_owner_data & mem_s_valid;
+  assign data_resp_valid = mem_busy &  mem_owner_data & mem_s_valid;
 
   //---------------------------------------------------------------------------
   // Program loader
   //---------------------------------------------------------------------------
   task load_word(input [31:0] addr, input [31:0] word);
     begin
-      ram[addr+0] = word[7:0];
-      ram[addr+1] = word[15:8];
-      ram[addr+2] = word[23:16];
-      ram[addr+3] = word[31:24];
+      mem.poke_word(addr, word);
     end
   endtask
 
@@ -161,7 +160,7 @@ module criscv_tb;
 
 
     // c stlye loop test
-   /* load_word('h00, 32'h40000113);   // addi x2, x0, 0x400          sp
+  /*  load_word('h00, 32'h40000113);   // addi x2, x0, 0x400          sp
     load_word('h04, 32'hfe010113);   // addi x2, x2, -32
     load_word('h08, 32'h02010413);   // addi x8, x2, 32             s0
     load_word('h0C, 32'h30002023);   // sw   x0, 0x300(x0)          clear LED word
@@ -186,9 +185,60 @@ module criscv_tb;
     load_word('h58, 32'hfec42703);   // lw   x14, -20(x8)    b38:  lw a4,-20(s0)
     load_word('h5C, 32'h00f00793);   // addi x15, x0, 15     b3c:  li a5,15
     load_word('h60, 32'hfae7dce3);   // bge  x15, x14, INIT  b40:  bge a5,a4,af8
-    load_word('h64, 32'h0000006f);   // jal  x0, 0                  park*/
+    load_word('h64, 32'h0000006f);   // jal  x0, 0                  park
+*/
+/*
+    load_word('h00, 32'h30000113);   // addi x2, x0, 0x300       # sp
+    load_word('h04, 32'hff010113);   // addi x2, x2, -16         # main frame
+    load_word('h08, 32'h00012023);   // sw   x0, 0(x2)           # i = 0
+    load_word('h0C, 32'h00012223);   // sw   x0, 4(x2)           # sum = 0
+    load_word('h10, 32'h00a00493);   // addi x9, x0, 10          # limit
+    // COND:
+    load_word('h14, 32'h00012283);   // lw   x5, 0(x2)           # reload i each pass
+    load_word('h18, 32'h0292d663);   // bge  x5, x9, DONE
+    load_word('h1C, 32'h00028533);   // add  x10, x5, x0         # a0 = i
+    load_word('h20, 32'h034000ef);   // jal  x1, TWICE
+    load_word('h24, 32'h00412303);   // lw   x6, 4(x2)           # reload sum
+    load_word('h28, 32'h00a30333);   // add  x6, x6, x10         # sum += twice(i)
+    load_word('h2C, 32'h00612223);   // sw   x6, 4(x2)
+    load_word('h30, 32'h00012283);   // lw   x5, 0(x2)           # callee may have clobbered x5
+    load_word('h34, 32'h00128293);   // addi x5, x5, 1
+    load_word('h38, 32'h00512023);   // sw   x5, 0(x2)           # i++
+    load_word('h3C, 32'hfd9ff06f);   // jal  x0, COND
+    load_word('h40, 32'h00100f13);   // addi x30, x0, 1          # flushed
+    // DONE:
+    load_word('h44, 32'h00412583);   // lw   x11, 4(x2)          # result
+    load_word('h48, 32'h00012603);   // lw   x12, 0(x2)          # final i
+    load_word('h4C, 32'h01010113);   // addi x2, x2, 16          # pop frame
+    load_word('h50, 32'h0000006f);   // jal  x0, 0               # park
+    // TWICE:  (0x54) non-leaf, saves ra
+    load_word('h54, 32'hff010113);   // addi x2, x2, -16
+    load_word('h58, 32'h00112023);   // sw   x1, 0(x2)           # save ra
+    load_word('h5C, 32'h00a12223);   // sw   x10, 4(x2)          # save arg
+    load_word('h60, 32'h028000ef);   // jal  x1, INC
+    load_word('h64, 32'h00a12423);   // sw   x10, 8(x2)          # stash first result
+    load_word('h68, 32'h00412503);   // lw   x10, 4(x2)          # restore arg
+    load_word('h6C, 32'h01c000ef);   // jal  x1, INC
+    load_word('h70, 32'h00812383);   // lw   x7, 8(x2)
+    load_word('h74, 32'h00750533);   // add  x10, x10, x7
+    load_word('h78, 32'h00012083);   // lw   x1, 0(x2)           # restore ra
+    load_word('h7C, 32'h01010113);   // addi x2, x2, 16
+    load_word('h80, 32'h00008067);   // jalr x0, 0(x1)           # return
+    load_word('h84, 32'h00100e93);   // addi x29, x0, 1          # flushed
+    // INC:  (0x88) leaf, no frame
+    load_word('h88, 32'h00150513);   // addi x10, x10, 1
+    load_word('h8C, 32'h00008067);   // jalr x0, 0(x1)           # return
+    load_word('h90, 32'h00100e13);   // addi x28, x0, 1          # flushed
 
+*/
 
+    load_word('h00, 32'h008000ef);   // jal  x1, A        x1 should be 0x04
+    load_word('h04, 32'h00100f13);   // addi x30, x0, 1   flushed
+    load_word('h08, 32'h01400293);   // addi x5, x0, 0x14
+    load_word('h0C, 32'h00028367);   // jalr x6, 0(x5)    x6 should be 0x10
+    load_word('h10, 32'h00100e93);   // addi x29, x0, 1   flushed
+    load_word('h14, 32'h0000006f);   // jal  x0, 0        park
+/*
 
        load_word('h00, 32'h06400293);   // addi  x5, x0, 0x64        HANDLER address
     load_word('h04, 32'h30529073);   // csrrw x0, mtvec, x5       write, no read
@@ -226,7 +276,7 @@ module criscv_tb;
     load_word('h80, 32'h004c8d13);   // addi  x26, x25, 4
     load_word('h84, 32'h341d1073);   // csrrw x0, mepc, x26       return past the ecall
     load_word('h88, 32'h30200073);   // mret
-    load_word('h8C, 32'h00100d93);   // addi  x27, x0, 1          must be flushed
+    load_word('h8C, 32'h00100d93);   // addi  x27, x0, 1          must be flushed*/
   end
 
   //---------------------------------------------------------------------------
@@ -254,6 +304,8 @@ module criscv_tb;
     $dumpfile("criscv_tb.vcd");
     $dumpvars(0, criscv_tb);
     $display("Starting simulation");
+    for (reg_index = 0; reg_index < 32; reg_index = reg_index + 1)
+      dut.u_decode.regs[reg_index] = 32'b0;
     reset = 1'b0;
     repeat (4) @(posedge mclk);
     #1
@@ -261,7 +313,7 @@ module criscv_tb;
 
     // Give the program plenty of cycles to run through and park in the
     // jal-to-self loop at 0x28 (it's harmless to keep clocking after that).
-    repeat (20000) @(posedge mclk);
+    repeat (25000) @(posedge mclk);
 
     dump_regs;
     $display("Finished simulation");

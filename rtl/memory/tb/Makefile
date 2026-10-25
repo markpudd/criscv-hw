@@ -11,8 +11,8 @@
 
 RTL        ?= ../mmu.v
 SIM_MODELS  = sim_models/ram.v sim_models/memcache.v
-TB          = mmu_tb.v
-OUT         = mmu_tb
+TB          = mmu_dual_request_tb.v
+OUT         = mmu_dual_request_tb
 IVFLAGS     = -g2005 -Wall -Wno-timescale
 
 .PHONY: all run strict verbose wave real_sdram real_sdram_wave clean
@@ -52,4 +52,4 @@ real_sdram_wave: $(REAL_OUT)
 	@echo "wrote mmu_sdram_tb.vcd"
 
 clean:
-	rm -f $(OUT) $(REAL_OUT) mmu_tb.vcd mmu_sdram_tb.vcd
+	rm -f $(OUT) $(REAL_OUT) mmu_dual_request_tb.vcd mmu_sdram_tb.vcd

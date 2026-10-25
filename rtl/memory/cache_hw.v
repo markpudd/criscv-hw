@@ -26,5 +26,5 @@ module cache_hw (
         .wren   (burst ? h_wren : w_wren),
         .q      (w_q));
 
-    assign h_q = h_sel ?   w_q[15:0] : w_q[31:16];
+        assign h_q = h_sel ? w_q[31:16] : w_q[15:0];
 endmodule

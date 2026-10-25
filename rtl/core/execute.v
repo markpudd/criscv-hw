@@ -20,7 +20,7 @@ module execute(input             mclk,
                  input      [31:0] IDEX_rs1,
                  input      [31:0] IDEX_rs2,
                  input      [6:0]  IDEX_opcode,
-                 input      [3:0]  IDEX_funct3,
+                 input      [2:0]  IDEX_funct3,
                  input             IDEX_modbit,
                  input      [31:0] IDEX_imm,
                  input      [11:0] IDEX_csr,
@@ -46,7 +46,7 @@ module execute(input             mclk,
                  output reg [31:0] mem_write_data,
                  output reg [31:0] mem_address_d,
                  output reg [1:0]  mem_size_d,
-                 output reg        mem_rw_d,
+                 output reg      mem_rw_d,
 
                  // Mem handshakes
                  output reg    m_valid_d,
@@ -75,7 +75,7 @@ module execute(input             mclk,
   reg  alu_req = 1'b0;
 
   wire  [31:0] rd;
-  wire  alu_comp;
+
 
   wire [31:0] mpx_csr;
 
@@ -85,16 +85,18 @@ module execute(input             mclk,
 
   reg [31:0] mtvec;
   reg [31:0] mepc;
+  reg [5:0] mtcause;
+  // reg [31:0] mtval;
 
 
 
-  reg [63:0] mcycle;
+ // reg [63:0] mcycle;reg  
   reg [63:0] minstret;
 
 
 
 
-  assign mpx_csr = (csr[11:8] == 4'h3) ?
+  assign mpx_csr = 0; /* (csr[11:8] == 4'h3) ?
          //   (csr[7:4] == 4'h0) ?  machine_trap_setup_regs[csr[3:0]] :
          //   (csr[7:4] == 4'h3) ?  machine_trap_handling_regs[csr[3:0]] :
          0 :
@@ -104,8 +106,9 @@ module execute(input             mclk,
          (csr[7:4] == 4'h80) ?    mcycle[63:32] :
          (csr[7:4] == 4'h82) ?  minstret[63:32] :
          0
-       : 0;
+       : 0;*/
 
+  wire  alu_busy;
 
   alu  alui(.clk(mclk),
             .div_req(alu_req),
@@ -117,68 +120,16 @@ module execute(input             mclk,
             .rs1(IDEX_rs1),
             .rs2(IDEX_rs2),
             .rd(rd),
-            .comp(alu_comp));
-  /*
-    always @(*)
-    begin
-      branch_taken  = 1'b0;              // default every path - avoids inferred latches
-      branch_target = 32'b0;       // default fall-through, harmless if not taken
-   
-      if (IDEX_valid)
-      begin
-        case (IDEX_opcode)
-        7'b1100011:
-        begin // BRANCH
-          branch_target = IDEX_pc + IDEX_imm;
-          case (IDEX_funct3)
-            3'b000:
-              branch_taken = (IDEX_rs1 == IDEX_rs2);              // BEQ
-            3'b001:
-              branch_taken = (IDEX_rs1 != IDEX_rs2);              // BNE
-            3'b100:
-              branch_taken = ($signed(IDEX_rs1) < $signed(IDEX_rs2)); // BLT
-            3'b101:
-              branch_taken = ($signed(IDEX_rs1) >= $signed(IDEX_rs2)); // BGEmodule execute(input             mclk,
-            3'b110:
-              branch_taken = (IDEX_rs1 < IDEX_rs2);               // BLTU
-            3'b111:
-              branch_taken = (IDEX_rs1 >= IDEX_rs2);              // BGEU
-          endcase
-        end
-        7'b1101111:
-        begin // JAL - always taken
-          branch_taken  = 1'b1;
-          branch_target = IDEX_pc + IDEX_imm;
-        end
-        7'b1100111:
-        begin // JALR - always taken, target from register not PC
-          branch_taken  = 1'b1;
-          branch_target = IDEX_rs1 + IDEX_imm;
-        end
-        7'b1110011 :  // SYSYTEM
-        begin
-          case (IDEX_funct3)
-            3'b000 :
-            begin     // ECALL/EBREAK
-              if(IDEX_imm == 0)
-              begin
-                branch_taken  = 1'b1;
-                branch_target = mtvec;// + (11*4);
-                mepc = IDEX_pc+4;
-              end
-              else // (USM)RET
-              begin
-                branch_taken  = 1'b1;
-                branch_target = mepc;
-              end
-            end
-          endcase
-        end
-      endcase
-    end
-    end*/
+            .busy(alu_busy));
 
 
+ // assign EX_ready = ~m_valid_d && ~alu_busy;
+
+  // Memory misalignment
+  /*wire [1:0] size = IDEX_funct3[1:0];
+  wire [1:0] align_mask = (size == 2'b10) ? 2'b11 :
+       (size == 2'b01) ? 2'b01 : 2'b00;
+  wire misaligned = |(mem_address_d[1:0] & align_mask);*/
   //---------------------------------------------------------------------------
   // Register file write port.
   //
@@ -196,24 +147,19 @@ module execute(input             mclk,
     EX_ready =  1'b1;                   // default every path - avoids inferred latches
     branch_taken  = 1'b0;              // default every path - avoids inferred latches
     branch_target = 32'b0;       // default fall-through, harmless if not taken
-
+   // mem_rw_d = 0;
     // same nesting as the sequential block below, so the two behave
     // identically when mem_rw_req_d is still X out of reset
     if(sys_ready)
       if (IDEX_valid) // & IDEX_valid)
       begin
         casex (IDEX_opcode)
-          7'b0010011,7'b0110011 :  // ALU - RV32I - combinational logic
+          7'b0010011,7'b0110011 :  // ALU
           begin
+            //  RV32I - combinational logic
             rf_we    = 1'b1;
             rf_wdata = rd;
           end
-          /*     7'b0110011 :  // ALU - RV32M - muti cycle logic
-               begin
-                 rf_we    = alu_comp;
-                 rf_wdata = rd;
-               end*/
-
           7'b1100011:
           begin // BRANCH
             branch_target = IDEX_pc + IDEX_imm;
@@ -230,13 +176,15 @@ module execute(input             mclk,
                 branch_taken = (IDEX_rs1 < IDEX_rs2);               // BLTU
               3'b111:
                 branch_taken = (IDEX_rs1 >= IDEX_rs2);              // BGEU
+              default:
+                branch_taken =0;
             endcase
           end
-			 7'b1101111:
+          7'b1101111:
           begin // JAL - always taken
-			   branch_taken  = 1'b1;
+            branch_taken  = 1'b1;
             branch_target = IDEX_pc + IDEX_imm;
-            rf_we    = (rd_index !=0);
+            rf_we    = 1; //(rd_index !=0);
             rf_wdata = IDEX_pc+4;
 
           end
@@ -245,17 +193,17 @@ module execute(input             mclk,
 
             branch_taken  = 1'b1;
             branch_target = IDEX_rs1 + IDEX_imm;
-				rf_we    = (rd_index !=0);
+            rf_we    = 1; //(rd_index !=0);
             rf_wdata = IDEX_pc+4;
           end
           7'b0110111 :  // LUI
           begin
-            rf_we    = (IDEX_rd !=0);
+            rf_we    = 1'b1; // (IDEX_rd !=0);
             rf_wdata = IDEX_imm;
           end
           7'b0010111 :  // AUIPC
           begin
-            rf_we    = (IDEX_rd !=0);
+            rf_we    = 1'b1;  //(IDEX_rd !=0);
             rf_wdata = IDEX_pc+ IDEX_imm;
           end
           7'b0001111 :  // FENCE
@@ -271,12 +219,14 @@ module execute(input             mclk,
                 begin
                   branch_taken  = 1'b1;
                   branch_target = mtvec;// + (11*4);
-             //     mepc = IDEX_pc+4;
+                  mtcause = 11;
+                  //     mepc = IDEX_pc+4;
                 end
                 else // (USM)RET
                 begin
                   branch_taken  = 1'b1;
                   branch_target = mepc;
+                  mtcause = 0;
                 end
 
               end
@@ -284,24 +234,24 @@ module execute(input             mclk,
               begin  // CSRRW
                 if(csr[11:10] !== 4'h3)
                 begin
-                  rf_we    = (IDEX_rd !=0);
+                  rf_we    = 1'b1; //  (IDEX_rd !=0);
                   if(csr[7:6] == 4'h0)
                   begin
                     rf_wdata = csr[11:0];
-                    if(csr[5:0] == MTVEC) 
-						  begin
-              //        mtvec=  IDEX_rs1;
-                  //    machine_trap_setup_regs[csr[5:0]]  <= IDEX_rs1;
-						  end
+                    if(csr[5:0] == MTVEC)
+                    begin
+                      //        mtvec=  IDEX_rs1;
+                      //    machine_trap_setup_regs[csr[5:0]]  <= IDEX_rs1;
+                    end
                   end
                   else if(csr[7:6] == 4'h3)
                   begin
                     rf_wdata = csr[11:0];
                     if(csr[5:0] == MEPC)
-						  begin
-                 //     mepc=  IDEX_rs1;
-                   //   machine_trap_handling_regs[csr[5:0]]  <= IDEX_rs1;
-						   end
+                    begin
+                      //     mepc=  IDEX_rs1;
+                      //   machine_trap_handling_regs[csr[5:0]]  <= IDEX_rs1;
+                    end
                   end
                 end
               end
@@ -317,7 +267,7 @@ module execute(input             mclk,
               end
               3'b101 :
               begin  // CSRRWI
-                rf_we    = (rd_index != 0);
+                rf_we    = 1'b1; //(rd_index != 0);
                 rf_wdata = mpx_csr;
               end
               3'b111 :
@@ -327,13 +277,13 @@ module execute(input             mclk,
               end
               default :
               begin
-                rf_we = 1'b0;
+          //      rf_we = 1'b0;
               end
             endcase
           end
           default :
           begin
-            rf_we = 1'b0;
+    //        rf_we = 1'b0;
           end
         endcase
       end
@@ -341,12 +291,11 @@ module execute(input             mclk,
       casex (IDEX_opcode)
         7'b0000011 :  // LOAD
         begin
+     //     mem_rw_d =0;
           // stall until memory read completes
           if(s_valid_d & m_valid_d)
           begin
             rf_we = 1'b1;
-
-
             case (IDEX_funct3)
               3'b000:
                 rf_wdata = {{24{mem_read_data[7]}},  mem_read_data[7:0]};   // LB
@@ -369,6 +318,8 @@ module execute(input             mclk,
         end
         7'b0100011 :  // STORE - no register write
         begin
+       //   if(~s_valid_d)
+      //      mem_rw_d = 1;
           if(s_valid_d & m_valid_d)
             EX_ready =  1'b1;
           else
@@ -376,7 +327,10 @@ module execute(input             mclk,
 
           rf_we = 1'b0;
         end
-
+          default :
+          begin
+     //       rf_we = 1'b0;
+          end
       endcase
     end
 
@@ -390,13 +344,14 @@ module execute(input             mclk,
     begin
       m_valid_d <= 1'b0;
       mem_rw_d <= 0;
-		mepc <= 0;
-		mtvec <= 0;
+      mepc <= 0;
+      mtvec <= 0;
     end
     if(sys_ready)
       if(m_valid_d && s_valid_d)
       begin
         m_valid_d <= 0;
+
       end
       else
       begin
@@ -421,6 +376,7 @@ module execute(input             mclk,
               //         Would be nice to have seperat module but requires
               //         memory multiplexing complexity
             begin
+              // check - misaligned if so then trap!
               if(~m_valid_d)
               begin
                 // mem_address_d <= IDEX_rs1+$signed(IDEX_imm); // LB
@@ -442,74 +398,74 @@ module execute(input             mclk,
                 mem_rw_d <= 1;
                 m_valid_d <= 1;
               end
-
+              if(s_valid_d & m_valid_d)
+                 mem_rw_d <= 0;
+                
             end
-        7'b1110011 :  // SYSYTEM
-          begin
-            case (IDEX_funct3)
-              3'b000 :
-              begin     // ECALL/EBREAK - no register write
-                if(IDEX_imm == 0)
-                begin
-               
-                  mepc  <= IDEX_pc+4;
-                end
-                else // (USM)RET
-                begin
-                end
+            7'b1110011 :  // SYSYTEM
+            begin
+              case (IDEX_funct3)
+                3'b000 :
+                begin     // ECALL/EBREAK - no register write
+                  if(IDEX_imm == 0)
+                  begin
 
-              end
-              3'b001 :
-              begin  // CSRRW
-                if(csr[11:10] !== 4'h3)
-                begin
-                //  rf_we    = (IDEX_rd !=0);
-                  if(csr[7:6] == 4'h0)
-                  begin
-                    //rf_wdata = csr[11:0];
-                    if(csr[5:0] == MTVEC) 
-						  begin
-                      mtvec <=  IDEX_rs1;
-                  //    machine_trap_setup_regs[csr[5:0]]  <= IDEX_rs1;
-						  end
+                    mepc  <= IDEX_pc+4;
                   end
-                  else if(csr[7:6] == 4'h3)
+                  else // (USM)RET
                   begin
-                  //  rf_wdata = csr[11:0];
-                    if(csr[5:0] == MEPC)
-						  begin
-                      mepc <=  IDEX_rs1;
-                   //   machine_trap_handling_regs[csr[5:0]]  <= IDEX_rs1;
-						   end
+                  end
+
+                end
+                3'b001 :
+                begin  // CSRRW
+                  if(IDEX_csr[11:10] !== 4'h3)
+                  begin
+                    //  rf_we    = (IDEX_rd !=0);
+                    if(IDEX_csr[7:6] == 4'h0)
+                    begin
+                      //rf_wdata = csr[11:0];
+                      if(IDEX_csr[5:0] == MTVEC)
+                      begin
+                        mtvec <=  IDEX_rs1;
+                      end
+                    end
+                    else if(IDEX_csr[7:6] == 4'h3)
+                    begin
+                      //  rf_wdata = csr[11:0];
+                      if(IDEX_csr[5:0] == MEPC)
+                      begin
+                        mepc <=  IDEX_rs1;
+                      end
+                    end 
                   end
                 end
-              end
-              3'b010 :
-              begin  // CSRRS - TODO Fix
-                //  rf_we    = 1'b1;
-                // rf_wdata    = mpx_csr | rs1;
-              end
-              3'b011 :
-              begin  // CSRRC - TODO Fix
-                //  rf_we    = 1'b1;
-                // rf_wdata = mpx_csr & ~rs1;
-              end
-              3'b101 :
-              begin  // CSRRWI
-            //   rf_we    = (rd_index != 0);
-             //   rf_wdata = mpx_csr;
-              end
-              3'b111 :
-              begin  // CSRRCI - TODO Fix
-          //      rf_we    = 1'b1;
-         //       rf_wdata = mpx_csr & ~uimm;
-              end
-              default :
-              begin
-         //       rf_we = 1'b0;
-              end
-            endcase
-          end
+                3'b010 :
+                begin  // CSRRS - TODO Fix
+                  //  rf_we    = 1'b1;
+                  // rf_wdata    = mpx_csr | rs1;
+                end
+                3'b011 :
+                begin  // CSRRC - TODO Fix
+                  //  rf_we    = 1'b1;
+                  // rf_wdata = mpx_csr & ~rs1;
+                end
+                3'b101 :
+                begin  // CSRRWI
+                  //   rf_we    = (rd_index != 0);
+                  //   rf_wdata = mpx_csr;
+                end
+                3'b111 :
+                begin  // CSRRCI - TODO Fix
+                  //      rf_we    = 1'b1;
+                  //       rf_wdata = mpx_csr & ~uimm;
+                end
+                default :
+                begin
+                  //       rf_we = 1'b0;
+                end
+              endcase
+            end
 
           endcase
         end

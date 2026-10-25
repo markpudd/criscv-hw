@@ -1,0 +1,458 @@
+//
+//  Super basic bootloader
+//  This has been written quickly for testing
+//
+#include <sys/asm.h>
+#include "stdfn.h"
+#include <elf.h>
+#include <string.h>
+#include <stdlib.h>
+#include "ymodem.h"
+
+#define STDFN_INC 1
+
+struct FileHeader {
+   char  type;
+   char  name[20];
+   uint32_t length;
+} FileHeader;
+
+#define LED (*(volatile unsigned char *)0xFFFFFF00)
+#define UART (*(volatile unsigned char *)0xffffff01)
+#define UART_STATUS (*(volatile unsigned char *)0xffffff02)
+#define UART_IN (*(volatile unsigned char *)0xffffff03)
+
+#define DEBUG_ADD1 (*(volatile int *)0x00003e00)
+#define DEBUG_ADD2 (*(volatile int *)0x00003e04)
+
+// Load regions (match the addresses used by load())
+              //                    0x00BFFFFC
+#define PROG_BASE ((unsigned char *)0xC00000)
+#define PROG_MAX  (0xC00000 - 0x10000)   // program must not run into the data region
+#define DATA_BASE ((unsigned char *)0xD00000)
+#define DATA_MAX  (0x100000)             // adjust to the size of your data RAM
+
+
+char led_state=0;
+
+
+extern void syscall();
+extern int pid;
+extern char _end[]; 
+int ftype=0;
+
+
+
+
+
+void setled() {
+  LED = led_state;
+}
+
+void sendchar(char c) {
+  UART = c;
+}
+
+
+  // We could use printf but want to keep bootloader code small
+void sendstring(char * str) {
+  int pos=0;
+  while(str[pos] != 0) {
+        while((UART_STATUS & 0x01)== 1) {};
+    sendchar(str[pos++]);
+
+  }
+}
+
+void waitForStart() {
+  char  in;
+  char * start = "RVF";
+  int st_pos=0;
+  while(st_pos<3) {
+      while((UART_STATUS & 0x02)!= 2) {};
+      in = UART_IN;
+      if(in == start[st_pos]) {
+        st_pos++;
+      } else
+      {
+        if(in == start[0]) 
+          st_pos=1;
+        else
+          st_pos=0;
+      }
+      
+  }
+}
+
+void readBytes(unsigned char * buf,int len) {
+  for(int i=0;i<len;i++) {
+      while((UART_STATUS & 0x02)!= 2) {};
+      buf[i] = UART_IN;
+  }
+}
+  struct FileHeader fileHeader;
+
+int load() {
+
+  char in;
+
+
+
+  int perc_count=0;
+  int perc_top=0;
+  // read length
+  unsigned char* load_ram_base=  (unsigned char *)PROG_BASE;
+
+sendstring("Waiting for file\n");
+
+
+  waitForStart();
+  //sendstring("Recieving file\n");
+  led_state=led_state^0x08;
+  setled();
+
+  // Avoid struct alignment issues
+  readBytes((unsigned char *)(&fileHeader.type),1);
+  readBytes((unsigned char *)(fileHeader.name),20);
+  readBytes((unsigned char *)(&fileHeader.length),4);
+
+ // sendstring("Filename - ");
+  //sendstring(fileHeader.name);
+  //sendstring("\n");
+  perc_top = fileHeader.length >>5;
+
+  switch(fileHeader.type) {
+    case 0:
+      sendchar('p');
+      break;
+    case 1:                                
+      load_ram_base=  (unsigned char *)DATA_BASE;
+      sendchar('f');
+      break;
+    default:
+      sendchar('?');
+      break;
+  }
+  DEBUG_ADD1 =fileHeader.length+3;
+
+  for(int i=0;i<fileHeader.length;i++) {
+    while((UART_STATUS & 0x02)!= 2) {};
+    in = UART_IN;
+    load_ram_base[i]=in;
+    perc_count++;
+    if(perc_count == perc_top) {
+      sendchar('X');
+        perc_count=0;
+    }
+  }
+  while((UART_STATUS & 0x01)== 1) {};
+  sendchar('\n');
+  while((UART_STATUS & 0x01)== 1) {};
+  led_state=4;
+  setled();
+  sendstring(" recieved\n");
+  return 0;
+}
+
+int run(  unsigned char * load_ram_base) {
+  pid =2;
+  int  start = ((int*)load_ram_base)[6];
+  int (*boot_main)(void) = (int (*)())(start);
+  return boot_main();
+}
+
+
+ Elf32_Shdr * getBssHeader(unsigned char * load_ram_base) {
+      Elf32_Ehdr * header = (Elf32_Ehdr *)load_ram_base;
+      int e_shoff  = header->e_shoff;
+      int e_shnum  =  header->e_shnum;  
+      int e_shentsize = header->e_shentsize;
+      int e_shstrndx = header->e_shstrndx;
+      unsigned char * spnt = load_ram_base+e_shoff;
+     
+      Elf32_Off string_st = ((Elf32_Shdr *)((e_shstrndx*e_shentsize)+spnt))->sh_offset;
+
+      for(int i=0;i<e_shnum;i++) {
+          Elf32_Shdr * sh = (Elf32_Shdr *)spnt;
+          char * name = (char*)(load_ram_base+string_st+(sh->sh_name));
+          if(!strcmp(".bss",name)) {
+              return sh;
+          }
+          spnt = spnt+e_shentsize;
+      }
+      return 0;
+}
+// Simple character input helpers for the interactive shell
+char readchar() {
+  while((UART_STATUS & 2) != 2) {};
+  char c = UART_IN;
+  if(c ==0)
+     c='.';
+  return c;
+}
+
+int readline(char *buf, int max) {
+  int pos = 0;
+  char c;
+  while(pos < max-1) {
+    c = readchar();
+    if(c == '\r') break;
+    if(c == '\n') break;
+    if(c == 8 || c == 127) { if(pos>0) pos--; continue; }
+    buf[pos++] = c;
+    sendchar(c);
+  }
+  buf[pos] = 0;
+  sendstring("\n");
+  return pos;
+}
+
+void ls_stub() {
+  sendstring("ls: stub. No filesystem available.\n");
+}
+
+void cd_stub(char *dir) {
+  sendstring("cd: stub, changed to ");
+  sendstring(dir);
+  sendstring("\n");
+}
+
+void run_file_stub(char *fname) {
+  sendstring("run: stub, would run file: ");
+  sendstring(fname);
+  sendstring("\n");
+}
+
+void byte_to_hex(unsigned char byte, char *output) {
+  const char hex_chars[] = "0123456789abcdef";
+  
+  output[0] = hex_chars[(byte >> 4) & 0x0F]; // Get high 4 bits
+  output[1] = hex_chars[byte & 0x0F];        // Get low 4 bits
+  output[2] = ' ';                          // Null-terminate the string
+  output[3] = '\0';                          // Null-terminate the string
+}
+
+
+// Common handling once a file is in RAM (used by both upload and rz)
+void after_load() {
+  char temp[16];
+  char hex[4]; 
+  unsigned char * load_ram_base= PROG_BASE;
+
+  sendstring("Filename = ");
+  sendstring(fileHeader.name);
+  sendstring("\n");
+  if(fileHeader.type==0) {
+    // Sanity check: don't jump into something that isn't an ELF
+    if(load_ram_base[0]!=0x7f || load_ram_base[1]!='E' ||
+       load_ram_base[2]!='L'  || load_ram_base[3]!='F') {
+      for (int i=0;i<15;i++) {
+        for(int j=0;j<16;j++) {
+          byte_to_hex(load_ram_base[(i*16)+j], hex);
+          sendstring(hex);
+        }
+        sendstring("\n");
+      }
+      return;
+
+    }
+    
+    Elf32_Shdr * bssHeader = getBssHeader(load_ram_base);
+    if(bssHeader == 0) {
+      sendstring("Error BSS header\n");
+      return;
+    }
+    sendstring("File type program\n");
+    itoa((int)(load_ram_base+bssHeader->sh_offset), temp, 16);
+    sendstring("Setting heap to  = ");
+    sendstring(temp);
+    sendstring("\n");
+    run(load_ram_base);
+    sendstring("Finished\n");
+  } else {
+    sendstring("File type data\n");
+  }
+}
+
+static void put_hex(uint32_t v)
+{
+    for (int i = 28; i >= 0; i -= 4) {
+        uint32_t d = (v >> i) & 0xf;
+        sendchar(d < 10 ? '0' + d : 'a' + d - 10);
+    }
+}
+int32_t mem_addr_test(uint32_t start, uint32_t end, int byte_stores)
+{
+    uint32_t a, v, errs = 0;
+ 
+    for (a = start; a < end; a += 4) {
+        if (byte_stores) {
+            volatile uint8_t *b = (volatile uint8_t *)a;   /* little-endian */
+            b[0] = a; b[1] = a >> 8; b[2] = a >> 16; b[3] = a >> 24;
+        } else {
+            *(volatile uint32_t *)a = a;
+        }
+    }
+ 
+    for (a = start; a < end; a += 4) {
+        v = *(volatile uint32_t *)a;
+        if (v != a) {
+            if (errs < 8) {
+              sendstring("FAIL @");  (put_hex(a));
+              sendstring(" got ");   (put_hex(v));
+              sendstring(" xor ");   (put_hex(v ^ a));
+              sendstring("\r\n");
+            }
+            errs++;
+        }
+    }
+ 
+    sendstring(errs ? "errors: " : "PASS ");
+     (put_hex(errs));
+    sendstring("\r\n");
+    return errs;
+}
+
+// Extracted upload loop from original main; called by the shell `upload` command
+void upload_loop() {
+  sendstring("Waiting....\n");
+  if(load()) {
+    sendstring("Load failure\n");
+  } else {
+    sendstring("Load complete\n");
+    after_load();
+  }
+}
+
+void mt_cmd(char* args) {
+  mem_addr_test(0xc00000, 0xd00000, 0);
+  mem_addr_test(0xc00000, 0xd00000, 1);
+}
+// YMODEM upload: `rb` auto-detects (ELF -> program, else data), `rb p` / `rb d` force it
+void rb_cmd(char *arg) {
+  ym_file_t yf;
+  char temp[16];
+  int force = -1;
+  if(arg && arg[0]=='p') force = YM_TYPE_PROG;
+  if(arg && arg[0]=='d') force = YM_TYPE_DATA;
+
+  sendstring("rb: start YMODEM send now\n");
+  int r = ym_receive(PROG_BASE, PROG_MAX, DATA_BASE, DATA_MAX, force, &yf);
+  led_state = 4;
+  setled();
+
+  // let the host terminal drop out of transfer mode before we print
+  for(volatile int d=0; d<200000; d++) {};
+  sendstring("\n");
+
+  if(r < 0) {
+    if(r == YM_ERR_CANCEL)       sendstring("rb: cancelled\n");
+    else if(r == YM_ERR_TIMEOUT) sendstring("rb: timed out waiting for sender\n");
+    else if(r == YM_ERR_TOOBIG)  sendstring("rb: file too big\n");
+    else                         sendstring("rb: too many errors\n");
+    return;
+  }
+
+  // Reuse the existing header so the rest of the bootloader is unchanged
+  strcpy(fileHeader.name, yf.name);
+  fileHeader.type   = yf.type;
+  fileHeader.length = yf.length;
+
+  itoa((int)yf.length, temp, 10);
+  sendstring("Load complete, ");
+  sendstring(temp);
+  sendstring(" bytes\n");
+  after_load();
+}
+
+void shell() {
+  char buf[128];
+  sendstring("CRISC-V Bootloader v0.3 - RV32I (YMODEM)\n");
+
+  while(1) {
+    sendstring("> ");
+    readline(buf, sizeof(buf));
+    char *cmd = strtok(buf, " ");
+    if(!cmd) continue;
+    if(!strcmp(cmd, "ls")) {
+      ls_stub();
+    } else if(!strcmp(cmd, "cd")) {
+      char *arg = strtok(NULL, " ");
+      if(arg) cd_stub(arg); else sendstring("cd: missing argument\n");
+    } else if(!strcmp(cmd, "run")) {
+      char *arg = strtok(NULL, " ");
+      if(arg) run_file_stub(arg); else sendstring("run: missing filename\n");
+    } else if(!strcmp(cmd, "upload")) {
+      upload_loop();
+    } else if(!strcmp(cmd, "rb")) {
+      rb_cmd(strtok(NULL, " "));
+    } else if(!strcmp(cmd, "mt")) {
+      mt_cmd(strtok(NULL, " "));
+    } else if(!strcmp(cmd, "help")) {
+      sendstring("Commands: ls cd run upload rb [p|d] mt help\n");
+    } else {
+      sendstring("Unknown command\n");
+    }
+  }
+}
+
+void setLed3() {
+  LED=4;
+}
+int main() {
+ // char temp[16];
+ //LED = 1;
+
+ //UART ='A';
+
+ DEBUG_ADD2=0x55FF;
+ DEBUG_ADD1=0x77EE;
+ //unsigned char * load_ram_base= (unsigned char *)0x10000;
+  pid=0;
+ // int* bss_size =0x0;
+ // void (*traps[16])();
+  
+  for(int i=0;i<16;i++) {
+    for(int x=0;x<62500;x++) {
+      DEBUG_ADD1 =i;
+      DEBUG_ADD2= x;
+    }
+    DEBUG_ADD2=0x55FF;
+    DEBUG_ADD1=0x77EE;
+
+    LED=i;
+    //setled();
+  }
+
+  LED=2;
+  //setled();
+  //setLed3();
+ // UART ='C';
+ // while((UART_STATUS & 0x01)== 1) {};
+ // UART ='D';
+ LED=3;
+ //   ___ ___ ___ ___ ___     __   __
+//  / __| _ \_ _/ __/ __|____\ \ / /   RV32I soft-core
+// | (__|   /| |\__ \ (_|_____\ V /    Cyclone FPGA
+//  \___|_|_\___|___/\___|     \_/
+//====================================================
+sendstring("  ___ ___ ___ ___ ___     __   __\n");
+sendstring(" / __| _ \\_ _/ __/ __|____\\ \\ / /   RV32I \n");
+sendstring("| (__|   /| |\\__ \\ (_|_____\\ V /    0.1\n");
+sendstring(" \\___|_|_\\___|___/\\___|     \\_/ \n");
+
+  
+  if(STDFN_INC) {
+    //traps[11] =syscall;
+    asm("csrw  mtvec, %0" :  : "r"(&syscall));
+    sendstring("Stdfn (v0.1) ECALL Available\n");
+  }
+
+
+
+
+
+  shell();
+
+  return 0;
+}

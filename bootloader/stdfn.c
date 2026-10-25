@@ -6,22 +6,32 @@
 
 
 int pid;
-extern char * _end[]; 
+//extern char * _end[]; 
+extern char _end[];
 
-char* file_dp;
+unsigned char* file_dp;
 int  fdp_offset;
 
+
+#define LED (*(volatile unsigned char *)0xFFFFFF00)
+#define UART (*(volatile unsigned char *)0xffffff01)
+#define UART_STATUS (*(volatile unsigned char *)0xffffff02)
+#define UART_IN (*(volatile unsigned char *)0xffffff03)
+
+
 int _write (int fd, char *buf, int count) {
+  LED=7;
   if(fd != 5) {
-    char * uart = (char *)0xffffff01;
-    char * uart_status = (char *)0xffffff02;
+  //  char * uart = (char *)0xffffff01;
+  //  char * uart_status = (char *)0xffffff02;
     for(int i=0;i<count;i++) {
-      uart[0] = buf[i];
-      while((uart_status[0] & 1)== 1) {};
-    }
-  } else {
-    for(int i=0;i<count;i++) {
-        file_dp[fdp_offset++]=buf[i];
+      UART = buf[i];
+      while((UART_STATUS & 0x01)== 1) {};
+   //   while((uart_status[0] & 1)== 1) {};
+   // }
+  //} else {
+  // for(int i=0;i<count;i++) {
+    //    file_dp[fdp_offset++]=buf[i];
       
     }
   }
@@ -32,13 +42,12 @@ int _write (int fd, char *buf, int count) {
 
 int _read (int fd, char *buf, int count) {
   if(fd != 5) {
-    char * uart_in = (char *)0xffffff03;
-    char * uart_status = (char *)0xffffff02;
+  //  char * uart_in = (char *)0xffffff03;
+   // char * uart_status = (char *)0xffffff02;
     int pos=0;
     while(pos<count){
-      if((uart_status[0] & 2)== 2) {
-        buf[pos]=uart_in[0];
-      }
+      while((UART_STATUS & 0x02)!= 2) {};
+      buf[pos] = UART_IN;
     }
   } else {
     for(int i=0;i<count;i++) {
@@ -51,12 +60,12 @@ int _read (int fd, char *buf, int count) {
 int
 _open(const char *name, int flags, int mode)
 {
-  if(!strcmp("./test.bin"),name) {
+ // if(!strcmp("./test.bin"),name) {
     file_dp=  (unsigned char *)0xC00000;
     fdp_offset =0;
     return 5;
-  }
-  return NULL;
+  //}
+  //return NULL;
 }
 
 int _lseek(int fd, off_t offset, int whence) {
@@ -105,14 +114,15 @@ int _sbrk(int incr) {
    return 1;
  }
  
-int _brk(int incr) {
-  int * bss_size = (int *)0x0;
-
-  if(incr == 0)
-    return _end+bss_size[0];
-  else
-    return incr;
-}
+ int _brk(int incr)
+ {
+     volatile const uint32_t *bss_size = (volatile const uint32_t *)0x0;
+ 
+     if (incr == 0)
+         return (int)(uintptr_t)(_end + bss_size[0]);
+ 
+     return incr;
+ }
 
 int _gettimeofday(struct timeval *tv, struct timezone *tz) {
   int mcycle;
@@ -131,9 +141,9 @@ int _gettimeofday(struct timeval *tv, struct timezone *tz) {
   return 0;
 }
 
-void syscall() __attribute__ ((interrupt ("machine")));
-
-void syscall() {
+//void syscall() __attribute__ ((interrupt ("machine")));
+__attribute__((interrupt("machine"), aligned(4)))
+void syscall(void) {
   int a0,a1,a2,a3,a4,a5,a7;
   int ret;
   // These are on stack so lets get them from there
