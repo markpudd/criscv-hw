@@ -16,8 +16,18 @@ module cache_hw (
     reg h_sel;
     always @(posedge clock) h_sel <= h_address[0];   // tracks the RAM's address register
 
-	 
+    iram #(.ADDR_W(11), .DEPTH_W(11), .NB_COL(4), .COL_W(8),
+    .LPM_HINT("ENABLE_RUNTIME_MOD=YES,INSTANCE_NAME=CAD"))
+    ram (
+    .clock  (clock),
+    .address(burst ? h_address[11:1] : w_address),
+    .byteena(burst ? (h_address[0] ? 4'b1100 : 4'b0011) : w_be),
+    .data   (burst ? {h_data, h_data} : w_data),
+    .wren   (burst ? h_wren : w_wren),
+    .q      (w_q)); 
 
+
+ /*
     cache ram (
         .clock  (clock),
         .address(burst ? h_address[11:1] : w_address),
@@ -25,6 +35,6 @@ module cache_hw (
         .data   (burst ? {h_data, h_data} : w_data),
         .wren   (burst ? h_wren : w_wren),
         .q      (w_q));
-
+*/
         assign h_q = h_sel ? w_q[31:16] : w_q[15:0];
 endmodule

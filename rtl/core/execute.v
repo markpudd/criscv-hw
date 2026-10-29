@@ -26,6 +26,7 @@ module execute(input             mclk,
                  input      [11:0] IDEX_csr,
                  input      [5:0]  IDEX_rd,
                  input      [31:0] IDEX_pc,
+                 input             IDEX_is_async,
                  // decode-stage signals used directly by EX (unpipelined,
                  // as in the original)
                  input      [11:0] csr,
@@ -54,7 +55,7 @@ module execute(input             mclk,
 
                  // Pipeline IFEX Handshake
                  input      IDEX_valid,
-                 output reg   EX_ready);
+                 output wire   EX_ready);
   //  Machine CSR offsets
   localparam MTS_BASE     = 12'h300;
   localparam MSTATUS  	 	= 12'h0;
@@ -77,7 +78,7 @@ module execute(input             mclk,
   wire  [31:0] rd;
 
 
-  wire [31:0] mpx_csr;
+  reg [31:0] mpx_csr;
 
   // CSR Registers to allow for traps, exception and interupts
   //reg [31:0]  machine_trap_setup_regs [7:0] ;
@@ -85,33 +86,93 @@ module execute(input             mclk,
 
   reg [31:0] mtvec;
   reg [31:0] mepc;
-  reg [5:0] mtcause;
+
+
+  reg  [5:0]  IDEX_rd_as;
+
+  reg [63:0] mcycle;
+  reg [63:0] minstret;
+
   // reg [31:0] mtval;
 
 
-
- // reg [63:0] mcycle;reg  
-  reg [63:0] minstret;
+  reg s_ready;
 
 
+  // in EX, combinational — same instruction, same cycle
+  /* wire [31:0] ls_addr = IDEX_rs1 + IDEX_imm;   // your existing address adder
+   wire        misaligned_mem = m_valid_d && (
+                 (IDEX_funct3[1:0] == 2'b01 && ls_addr[0])         ||
+                 (IDEX_funct3[1:0] == 2'b10 && ls_addr[1:0] != 2'b00)
+               );*/
+
+  wire        is_load  = (IDEX_opcode == 7'b0000011);
+  wire        is_store = (IDEX_opcode == 7'b0100011);
+  wire [31:0] ls_addr  = IDEX_rs1 + IDEX_imm;
+  wire misaligned_mem  = IDEX_valid && (is_load || is_store) && (
+         (IDEX_funct3[1:0] == 2'b01 && ls_addr[0])           ||   // LH/LHU/SH
+         (IDEX_funct3[1:0] == 2'b10 && ls_addr[1:0] != 2'b00));
+
+  // wire misaligned_mem  = m_valid_d && (
+  //       (mem_size_d == 2'b01 && mem_address_d[0])          ||   // halfword on odd address
+  //    (mem_size_d == 2'b10 && mem_address_d[1:0] != 2'b00)    // word not 4-aligned
+  //   );
 
 
-  assign mpx_csr = 0; /* (csr[11:8] == 4'h3) ?
-         //   (csr[7:4] == 4'h0) ?  machine_trap_setup_regs[csr[3:0]] :
-         //   (csr[7:4] == 4'h3) ?  machine_trap_handling_regs[csr[3:0]] :
-         0 :
-         (csr[11:8] == 4'hb) ?
-         (csr[7:4] == 4'h0) ?  mcycle[31:0] :
-         (csr[7:4] == 4'h2) ?   minstret[31:0] :
-         (csr[7:4] == 4'h80) ?    mcycle[63:32] :
-         (csr[7:4] == 4'h82) ?  minstret[63:32] :
-         0
-       : 0;*/
+  reg [31:0] mstatus, mscratch, mcause, mtval;   // mtvec, mepc already declared
+
+  always @*
+  begin
+    case (IDEX_csr)
+      12'h300:
+        mpx_csr = mstatus;
+      12'h301:
+        mpx_csr = 32'h40000100;     // misa: MXL=1 (RV32), I
+      12'h305:
+        mpx_csr = mtvec;
+      12'h340:
+        mpx_csr = mscratch;
+      12'h341:
+        mpx_csr = mepc;
+      12'h342:
+        mpx_csr = mcause;
+      12'h343:
+        mpx_csr = mtval;
+      12'hB00, 12'hC00:
+        mpx_csr = mcycle[31:0];
+      12'hB80, 12'hC80:
+        mpx_csr = mcycle[63:32];
+      12'hB02, 12'hC02:
+        mpx_csr = minstret[31:0];
+      12'hB82, 12'hC82:
+        mpx_csr = minstret[63:32];
+      default:
+        mpx_csr = 32'b0;   // incl. mhartid (0xF14)
+    endcase
+  end
+
+  // CSR write value: RW / RS / RC, register or immediate form
+  wire [31:0] csr_src = IDEX_funct3[2] ? IDEX_imm : IDEX_rs1;
+  reg  [31:0] csr_wdata;
+  always @*
+  begin
+    case (IDEX_funct3[1:0])
+      2'b01:
+        csr_wdata = csr_src;              // CSRRW(I)
+      2'b10:
+        csr_wdata = mpx_csr |  csr_src;   // CSRRS(I) - csrr is rs1=x0, writes same value back
+      2'b11:
+        csr_wdata = mpx_csr & ~csr_src;   // CSRRC(I)
+      default:
+        csr_wdata = mpx_csr;
+    endcase
+  end
+
 
   wire  alu_busy;
 
   alu  alui(.clk(mclk),
-            .div_req(alu_req),
+            .div_req(alu_issue | alu_req),
             .reset(reset),
             .funct3(IDEX_funct3),
             .modbit(IDEX_modbit),
@@ -123,13 +184,11 @@ module execute(input             mclk,
             .busy(alu_busy));
 
 
- // assign EX_ready = ~m_valid_d && ~alu_busy;
+  wire alu_busy_op = (alu_issue | alu_req) & ~alu_done;
+  assign EX_ready = s_ready ; //& ~alu_busy_op;
+  wire alu_issue = sys_ready & IDEX_valid & IDEX_is_async & ~alu_req ; //& ~alu_complete;
+  wire alu_done  = alu_req & ~alu_busy;
 
-  // Memory misalignment
-  /*wire [1:0] size = IDEX_funct3[1:0];
-  wire [1:0] align_mask = (size == 2'b10) ? 2'b11 :
-       (size == 2'b01) ? 2'b01 : 2'b00;
-  wire misaligned = |(mem_address_d[1:0] & align_mask);*/
   //---------------------------------------------------------------------------
   // Register file write port.
   //
@@ -144,20 +203,31 @@ module execute(input             mclk,
     rf_we    = 1'b0;                   // default every path - avoids inferred lamem_size_dtches
     rf_waddr = IDEX_rd;
     rf_wdata = rd;
-    EX_ready =  1'b1;                   // default every path - avoids inferred latches
+    s_ready =  1'b1;                   // default every path - avoids inferred latches
     branch_taken  = 1'b0;              // default every path - avoids inferred latches
     branch_target = 32'b0;       // default fall-through, harmless if not taken
-   // mem_rw_d = 0;
+    // mem_rw_d = 0;
     // same nesting as the sequential block below, so the two behave
     // identically when mem_rw_req_d is still X out of reset
     if(sys_ready)
-      if (IDEX_valid) // & IDEX_valid)
+    begin
+
+      if (alu_done)
+      begin
+        rf_we    = 1'b1;
+        rf_waddr = IDEX_rd_as;
+        rf_wdata = rd;
+        s_ready = 1'b1;
+      end
+      else if (alu_req)
+        s_ready = 1'b0;
+      else if (IDEX_valid && !alu_req) // & IDEX_valid)
       begin
         casex (IDEX_opcode)
           7'b0010011,7'b0110011 :  // ALU
           begin
             //  RV32I - combinational logic
-            rf_we    = 1'b1;
+            rf_we    = ~IDEX_is_async;
             rf_wdata = rd;
           end
           7'b1100011:
@@ -219,121 +289,92 @@ module execute(input             mclk,
                 begin
                   branch_taken  = 1'b1;
                   branch_target = mtvec;// + (11*4);
-                  mtcause = 11;
-                  //     mepc = IDEX_pc+4;
+               //   mcause = 11;
                 end
                 else // (USM)RET
                 begin
                   branch_taken  = 1'b1;
                   branch_target = mepc;
-                  mtcause = 0;
-                end
-
-              end
-              3'b001 :
-              begin  // CSRRW
-                if(csr[11:10] !== 4'h3)
-                begin
-                  rf_we    = 1'b1; //  (IDEX_rd !=0);
-                  if(csr[7:6] == 4'h0)
-                  begin
-                    rf_wdata = csr[11:0];
-                    if(csr[5:0] == MTVEC)
-                    begin
-                      //        mtvec=  IDEX_rs1;
-                      //    machine_trap_setup_regs[csr[5:0]]  <= IDEX_rs1;
-                    end
-                  end
-                  else if(csr[7:6] == 4'h3)
-                  begin
-                    rf_wdata = csr[11:0];
-                    if(csr[5:0] == MEPC)
-                    begin
-                      //     mepc=  IDEX_rs1;
-                      //   machine_trap_handling_regs[csr[5:0]]  <= IDEX_rs1;
-                    end
-                  end
+              //    mcause = 11;
                 end
               end
-              3'b010 :
-              begin  // CSRRS - TODO Fix
-                //  rf_we    = 1'b1;
-                // rf_wdata    = mpx_csr | rs1;
-              end
-              3'b011 :
-              begin  // CSRRC - TODO Fix
-                //  rf_we    = 1'b1;
-                // rf_wdata = mpx_csr & ~rs1;
-              end
-              3'b101 :
-              begin  // CSRRWI
-                rf_we    = 1'b1; //(rd_index != 0);
-                rf_wdata = mpx_csr;
-              end
-              3'b111 :
-              begin  // CSRRCI - TODO Fix
+              3'b001, 3'b010, 3'b011, 3'b101,3'b110,3'b111  :
+              begin
                 rf_we    = 1'b1;
-                rf_wdata = mpx_csr & ~uimm;
+                rf_wdata    = mpx_csr;// | IDEX_rs1;
               end
               default :
               begin
-          //      rf_we = 1'b0;
               end
             endcase
           end
           default :
           begin
-    //        rf_we = 1'b0;
           end
         endcase
       end
-    begin
-      casex (IDEX_opcode)
-        7'b0000011 :  // LOAD
-        begin
-     //     mem_rw_d =0;
-          // stall until memory read completes
-          if(s_valid_d & m_valid_d)
+      begin
+        casex (IDEX_opcode)
+          7'b0000011 :  // LOAD
           begin
-            rf_we = 1'b1;
-            case (IDEX_funct3)
-              3'b000:
-                rf_wdata = {{24{mem_read_data[7]}},  mem_read_data[7:0]};   // LB
-              3'b001:
-                rf_wdata = {{16{mem_read_data[15]}}, mem_read_data[15:0]};  // LH
-              3'b100:
-                rf_wdata = {24'h0, mem_read_data[7:0]};                    // LBU
-              3'b101:
-                rf_wdata = {16'h0, mem_read_data[15:0]};                   // LHU
-              default:
-                rf_wdata = mem_read_data;                                 // LW
-            endcase
-            EX_ready =  1'b1;
-          end
-          else
-          begin
-            EX_ready = 0;
-            rf_we = 1'b0;
-          end
-        end
-        7'b0100011 :  // STORE - no register write
-        begin
-       //   if(~s_valid_d)
-      //      mem_rw_d = 1;
-          if(s_valid_d & m_valid_d)
-            EX_ready =  1'b1;
-          else
-            EX_ready = 0;
+            if(!misaligned_mem)
+            begin
+              if(s_valid_d & m_valid_d)
+              begin
+                rf_we = 1'b1;
+                case (IDEX_funct3)
+                  3'b000:
+                    rf_wdata = {{24{mem_read_data[7]}},  mem_read_data[7:0]};   // LB
+                  3'b001:
+                    rf_wdata = {{16{mem_read_data[15]}}, mem_read_data[15:0]};  // LH
+                  3'b100:
+                    rf_wdata = {24'h0, mem_read_data[7:0]};                    // LBU
+                  3'b101:
+                    rf_wdata = {16'h0, mem_read_data[15:0]};                   // LHU
+                  default:
+                    rf_wdata = mem_read_data;                                 // LW
+                endcase
+                s_ready =  1'b1;
+              end
+              else
+              begin
+                s_ready = 0;
+                rf_we = 1'b0;
+              end
+            end
+            else
+            begin
+              branch_taken  = 1'b1;
+              branch_target = mtvec;// + (11*4);
+          //    mcause = 4;
+            end
 
-          rf_we = 1'b0;
-        end
+          end
+          7'b0100011 :  // STORE - no register write
+          begin
+            if(!misaligned_mem)
+            begin
+              if(s_valid_d & m_valid_d)
+                s_ready =  1'b1;
+              else
+                s_ready = 0;
+
+              rf_we = 1'b0;
+            end
+            else
+            begin
+              branch_taken  = 1'b1;
+              branch_target = mtvec;// + (11*4);
+          //    mcause = 6;
+            end
+          end
           default :
           begin
-     //       rf_we = 1'b0;
           end
-      endcase
-    end
 
+        endcase
+      end
+    end
   end
 
 
@@ -346,8 +387,13 @@ module execute(input             mclk,
       mem_rw_d <= 0;
       mepc <= 0;
       mtvec <= 0;
+      mcycle<=0;
+      minstret<=0;
+      alu_req <= 0;
     end
     if(sys_ready)
+    begin
+      mcycle<=mcycle+63'b1;
       if(m_valid_d && s_valid_d)
       begin
         m_valid_d <= 0;
@@ -358,20 +404,20 @@ module execute(input             mclk,
         if (IDEX_valid )
         begin
           minstret<=minstret+63'b1;
+          if (alu_done)
+          begin
+            alu_req <= 0;
+          end
+          else
           casex (IDEX_opcode)
             7'b0010011,7'b0110011  :  // ALU - RV32I - combinational logic
             begin
-              // regs[IDEX_rd] <= rd;  -> rf_* write port above
+              if(IDEX_is_async)
+              begin
+                alu_req <= 1;
+                IDEX_rd_as <= IDEX_rd;
+              end
             end
-            /*     7'b0110011 :  // ALU - RV32M - muti cycle logic
-                 begin
-                   alu_req <= 1;
-                   if (alu_comp)
-                   begin
-                     // regs[IDEX_rd] <= rd;  -> rf_* write port above
-                     alu_req <= 0;
-                   end
-                 end*/
             7'b0000011 :  // LOAD  - From here on in we are pretty much running instrutions
               //         Would be nice to have seperat module but requires
               //         memory multiplexing complexity
@@ -379,28 +425,41 @@ module execute(input             mclk,
               // check - misaligned if so then trap!
               if(~m_valid_d)
               begin
-                // mem_address_d <= IDEX_rs1+$signed(IDEX_imm); // LB
-                mem_address_d <= IDEX_rs1+IDEX_imm; // LB
-                mem_size_d <= IDEX_funct3[1:0];
-                mem_rw_d <= 0;
-                m_valid_d<= 1;
+                if(misaligned_mem)
+                begin
+                  mepc  <= IDEX_pc+4;
+                   mcause <= 6'd4 ;
+                end
+                else
+                begin
+                  mem_address_d <= IDEX_rs1+IDEX_imm; // LB
+                  mem_size_d <= IDEX_funct3[1:0];
+                  mem_rw_d <= 0;
+                  m_valid_d<= 1;
+                end
               end
-
             end
             7'b0100011 :  // STORE
             begin
               if(~m_valid_d)
               begin
-                mem_size_d <= IDEX_funct3[1:0];
-                // mem_address_d <= IDEX_rs1+$signed(IDEX_imm);
-                mem_address_d <= IDEX_rs1+IDEX_imm;
-                mem_write_data <= IDEX_rs2;
-                mem_rw_d <= 1;
-                m_valid_d <= 1;
+                if(misaligned_mem)
+                begin
+                  mepc  <= IDEX_pc+4;
+                 mcause <= 6'd6;
+                end
+                else
+                begin
+                  mem_size_d <= IDEX_funct3[1:0];
+                  // mem_address_d <= IDEX_rs1+$signed(IDEX_imm);
+                  mem_address_d <= IDEX_rs1+IDEX_imm;
+                  mem_write_data <= IDEX_rs2;
+                  mem_rw_d <= 1;
+                  m_valid_d <= 1;
+                end
               end
               if(s_valid_d & m_valid_d)
-                 mem_rw_d <= 0;
-                
+                mem_rw_d <= 0;
             end
             7'b1110011 :  // SYSYTEM
             begin
@@ -411,6 +470,7 @@ module execute(input             mclk,
                   begin
 
                     mepc  <= IDEX_pc+4;
+                    mcause <= 11;
                   end
                   else // (USM)RET
                   begin
@@ -437,28 +497,20 @@ module execute(input             mclk,
                       begin
                         mepc <=  IDEX_rs1;
                       end
-                    end 
+                    end
                   end
                 end
-                3'b010 :
-                begin  // CSRRS - TODO Fix
-                  //  rf_we    = 1'b1;
-                  // rf_wdata    = mpx_csr | rs1;
-                end
-                3'b011 :
-                begin  // CSRRC - TODO Fix
-                  //  rf_we    = 1'b1;
-                  // rf_wdata = mpx_csr & ~rs1;
-                end
-                3'b101 :
-                begin  // CSRRWI
-                  //   rf_we    = (rd_index != 0);
-                  //   rf_wdata = mpx_csr;
-                end
-                3'b111 :
-                begin  // CSRRCI - TODO Fix
-                  //      rf_we    = 1'b1;
-                  //       rf_wdata = mpx_csr & ~uimm;
+                3'b001, 3'b010, 3'b011, 3'b101, 3'b110, 3'b111 :
+                begin
+                  case (IDEX_csr)                        // full 12-bit compare
+                    12'h300: mstatus  <= csr_wdata;
+                    12'h305: mtvec    <= csr_wdata;
+                    12'h340: mscratch <= csr_wdata;
+                    12'h341: mepc     <= csr_wdata;
+                    12'h342: mcause   <= csr_wdata;
+                    12'h343: mtval    <= csr_wdata;
+                    default: ;                           // counters/misa read-only
+                  endcase
                 end
                 default :
                 begin
@@ -470,6 +522,7 @@ module execute(input             mclk,
           endcase
         end
       end
+    end
   end
 
 endmodule

@@ -146,13 +146,13 @@ module top(input  mclk,
 
   wire s_valid_mmu;
 
-  assign s_valid = ~data_addr[31]?  s_valid_mmu:
-         /*		~data_addr[15] ?
-         	 vga_cmd_done : */ prec;
+  assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu:
+         		~data_addr[15] ?
+         	 vga_cmd_done :  prec;
 
 
-  assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu : prec;
-  assign vga_cmd_write =data_addr[31] & m_valid & rw & ~data_addr[15];
+ // assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu : prec;
+  assign vga_cmd_write =data_addr[31] & data_m_valid & data_we & ~data_addr[15];
 
   assign mem_led =sdrec;
 
@@ -165,7 +165,7 @@ module top(input  mclk,
   wire s_valid;
 
 
-  /*
+  
   vga vga(        .clk(dram_clk_2),	
   	    .vclk(vclk),
   		 .reset(reset),
@@ -174,8 +174,8 @@ module top(input  mclk,
   		 .read_data(sd_read_data_v),
   		 .burst_len(sd_burst_len_v),
   		 .data_available(sd_bursting_v),
-  		 .cmd_byte(write_data[7:0]),
-  		 .cmd_address(address[9:0]),
+  		 .cmd_byte(data_in[7:0]),
+  		 .cmd_address(data_addr[9:0]),
   		 .cmd_write(vga_cmd_write),
   		 .cmd_done(vga_cmd_done),
   		 .sd_busy(sd_busy_v),
@@ -184,7 +184,7 @@ module top(input  mclk,
   		 .b(b),
   		 .vsync(vsync),
   		 .hsync(hsync));					
-  	*/
+  	
 
   wire [31:0] inst_addr;
   wire [31:0] inst_out;

@@ -89,7 +89,7 @@ module criscv(input  mclk,
   wire [11:0] IDEX_csr;
   wire [5:0]  IDEX_rd;
   wire [31:0] IDEX_pc;
-
+  wire        IDEX_is_async;
 
   // decode-stage signals EX uses directly (unpipelined, as in the original)
   wire [11:0] csr;
@@ -203,7 +203,7 @@ module criscv(input  mclk,
                   .IDEX_csr(IDEX_csr),
                   .IDEX_rd(IDEX_rd),
                   .IDEX_pc(IDEX_pc),
-
+                  .IDEX_is_async(IDEX_is_async),
 
                   // Pipeline IFID Handshake
                   .IFID_valid(IFID_valid),
@@ -231,6 +231,7 @@ module criscv(input  mclk,
                     .IDEX_csr(IDEX_csr),
                     .IDEX_rd(IDEX_rd),
                     .IDEX_pc(IDEX_pc),
+                    .IDEX_is_async(IDEX_is_async),
 
                     .csr(csr),
                     .uimm(uimm),

@@ -7,7 +7,7 @@ module alu(input wire clk,
 			  input wire [6:0] opcode,
 			  input wire [31:0] rs1,
 			  input wire [31:0] rs2,
-			  output reg [31:0] rd,
+			  output wire [31:0] rd,
 			  output wire busy);
 	
 	
@@ -17,7 +17,7 @@ module alu(input wire clk,
 					DIV_COMP = 2'd2,
 					DONE = 2'd3;
 		
-	localparam 	DIV_DELAY = 4'd5;	
+	localparam 	DIV_DELAY = 4'd7;	
 	
 	
 	reg [5:0] div_counter;
@@ -25,7 +25,7 @@ module alu(input wire clk,
 	
 	reg [31:0] d_rd;	
 		
-	//assign rd = i_rd;
+	assign rd = div_req ? d_rd :srd;
 
 	reg [1:0] nState;
 	reg [1:0] cState;
@@ -71,56 +71,57 @@ module alu(input wire clk,
 	wire signed [32:0] b = {b_signed & rs2[31], rs2};
 	wire signed [65:0] prod = a * b;
 
+	reg [31:0] srd; 
 	always @(*) begin
-		rd = 32'b0;                          // default - no inferred latch
+		srd = 32'b0;                          // default - no inferred latch
 		if(rv32i_inst)
 		begin
 			if(alu_imm)
 				case (funct3)
-					3'b000 :   rd = rs1+$signed(imm) ;      // ADDI
-					3'b010 :   rd = $signed(rs1) < $signed(imm) ? 1 : 0;  // SLTI  signed
-					3'b011 :   rd = rs1 < imm ? 1 : 0;  // SLTIU unsigned
-					3'b100 :   rd = rs1^imm;      // XORI
-					3'b110 :   rd = rs1|imm;      // ORI
-					3'b111 :   rd = rs1&imm;      // ANDI
-					3'b001 :   rd = rs1 <<< imm[4:0];    // SLLI
+					3'b000 :   srd = rs1+$signed(imm) ;      // ADDI
+					3'b010 :   srd = $signed(rs1) < $signed(imm) ? 1 : 0;  // SLTI  signed
+					3'b011 :   srd = rs1 < imm ? 1 : 0;  // SLTIU unsigned
+					3'b100 :   srd = rs1^imm;      // XORI
+					3'b110 :   srd = rs1|imm;      // ORI
+					3'b111 :   srd = rs1&imm;      // ANDI
+					3'b001 :   srd = rs1 <<< imm[4:0];    // SLLI
 					3'b101 :  begin
-									if(modbit == 1'b0 ) rd =  rs1 >> imm[4:0];// SRLI
-									else rd =  $signed(rs1) >>> (imm[4:0]); // SRAI
+									if(modbit == 1'b0 ) srd =  rs1 >> imm[4:0];// SRLI
+									else srd =  $signed(rs1) >>> (imm[4:0]); // SRAI
 								end 
 				 endcase
 			 else
 				case (funct3)
-					3'b000 :   rd = (modbit == 1'b0) ? 
+					3'b000 :   srd = (modbit == 1'b0) ? 
 																rs1 + rs2 :    // ADD
 																rs1 - rs2;     // SUB
-					3'b001 :   rd = rs1 << rs2[4:0];	// SLL
-					3'b010 :   rd = $signed(rs1) < $signed(rs2) ? 1 : 0;	// SLT
-					3'b011 :   rd = rs1 < rs2 ? 1 : 0;	// SLTU
-					3'b100 :   rd = rs1 ^ rs2;	// XOR
+					3'b001 :   srd = rs1 << rs2[4:0];	// SLL
+					3'b010 :   srd = $signed(rs1) < $signed(rs2) ? 1 : 0;	// SLT
+					3'b011 :   srd = rs1 < rs2 ? 1 : 0;	// SLTU
+					3'b100 :   srd = rs1 ^ rs2;	// XOR
 					3'b101 :   begin
-									if(modbit == 1'b0 ) rd =  rs1 >> rs2[4:0] ;// SRLI
-									else rd =  $signed(rs1) >>> rs2[4:0]; // SRAI
+									if(modbit == 1'b0 ) srd =  rs1 >> rs2[4:0] ;// SRLI
+									else srd =  $signed(rs1) >>> rs2[4:0]; // SRAI
 								end 					
-					3'b110 :   rd = rs1|rs2;      // OR
-					3'b111 :   rd = rs1&rs2;      // AND
+					3'b110 :   srd = rs1|rs2;      // OR
+					3'b111 :   srd = rs1&rs2;      // AND
 				endcase
 			end
 		if(rv32m_inst)
 			begin
 			case (funct3)
-				3'b000:  rd = prod[31:0];   // MUL
-				3'b001,
-				3'b010,
-				3'b011:  rd = prod[63:32];  // MULH, MULHSU, MULHU
-				default: rd = 32'b0;        // DIV/REM handled elsewhere
+			3'b000:  srd = prod[31:0];               // MUL
+			3'b001,
+			3'b010,
+			3'b011:  srd = prod[63:32];              // MULH, MULHSU, MULHU
+			default: srd = 32'b0;  
 	    	endcase
 		end
 	end
 	
 
 
-
+	reg [2:0] op_f3;
 	
 	// Division State Machine	
 	always @ ( posedge clk) begin
@@ -129,16 +130,18 @@ module alu(input wire clk,
 		case(cState)
 		IDLE: 
 				begin
-					div_counter <= DIV_DELAY;
-					if(imm[5]) 
-					begin
-					case (funct3)
+					op_f3 <= funct3;
+					numer <= rs1;
+					denom <= rs2;
+				//	if(imm[5]) 
+				//	begin
+					case (op_f3)
 						3'b100,3'b101 ,3'b110 ,3'b111  :  begin
-								numer <= rs1;
-								denom <= rs2;
+								div_counter <= DIV_DELAY;
 							 end
-						endcase						
-					end
+
+					endcase						
+				//	end
 				end
 			DIV_WAIT: 
 				begin	
@@ -146,11 +149,28 @@ module alu(input wire clk,
 				end
 			DIV_COMP: 
 				begin	
-					case (funct3[1:0])
-						2'b00:  d_rd <= quotient;
-						2'b01:  d_rd <= uquotient;
-						2'b10:  d_rd <= remain;
-						2'b11:  d_rd <= uremain;
+					case (op_f3)
+						3'b100:  d_rd <= quotient;
+						3'b101:  d_rd <= uquotient;
+						3'b110:  d_rd <= remain;
+						3'b111:  d_rd <= uremain;
+						3'b000:  
+						begin
+							d_rd <= prod[31:0];   // MUL
+							div_counter <= 0;
+						end
+						3'b001,
+						3'b010,
+						3'b011: 
+						begin
+							d_rd <= prod[63:32];  // MULH, MULHSU, MULHU
+							div_counter <= 0;
+						end
+						default:
+						begin
+							d_rd <= 32'b0;        // DIV/REM handled elsewhere
+							 div_counter <= 0;
+							end
 					endcase
 				end
 			endcase
@@ -161,7 +181,7 @@ module alu(input wire clk,
 	always@(posedge clk) begin
 		if(~reset)
 		begin
-			cState = IDLE;
+			cState <= IDLE;
 		end
 		else
 			cState <= nState;
@@ -174,12 +194,13 @@ module alu(input wire clk,
 			 IDLE: begin
 				if(div_req)
 				begin
-					if(opcode == 7'b0110011 && imm[5])
-					begin
-						if(funct3[2]) nState = DIV_WAIT;
-						else nState = DONE;
-					end
-					else nState = DONE;
+			//		if(opcode == 7'b0110011 && imm[5])
+				//	begin
+				//		if(funct3[2]) 
+						nState = DIV_WAIT;
+					//	else nState = DONE;
+				//	end
+				//	else nState = DONE;
 				end
 				else nState = IDLE;
 				end

@@ -44,7 +44,7 @@ module decode(input             mclk,
               output reg [11:0] IDEX_csr,
               output reg [5:0]  IDEX_rd,
               output reg [31:0] IDEX_pc,
-
+              output reg        IDEX_is_async,
               
                 // Pipeline IFID Handshake
               input IFID_valid,
@@ -92,7 +92,13 @@ module decode(input             mclk,
   assign csr = IFID_inst[31:20];
   assign rs1 = regs[IFID_inst[19:15]];
   assign rs2 = regs[IFID_inst[24:20]];
+  wire [6:0] funct7 = IFID_inst[31:25];
 
+ // wire is_async     = (opcode == 7'b0110011) && (funct7 == 7'b0000001);
+
+// decode
+  wire is_m     = (opcode == 7'b0110011) && (funct7 == 7'b0000001);
+  wire is_async = is_m && funct3[2];          // DIV/DIVU/REM/REMU only
 
   // EX -> ID forwarding.
   //
@@ -141,7 +147,7 @@ assign ID_ready = EX_ready;
         IDEX_funct3 <= 3'b000;
         IDEX_imm    <= 32'd0;
 		    IDEX_valid  <= 1'b1;
-
+        IDEX_is_async <= 1'b0;
   end
     if (sys_ready)
     begin
@@ -156,6 +162,7 @@ assign ID_ready = EX_ready;
         IDEX_imm <= imm_mux;
         IDEX_csr <= csr;
         IDEX_rd  <= rd_index;
+        IDEX_is_async <= is_async;
 		  if(~idex_flush)
         IDEX_pc   <= IFID_pc;
 		    IDEX_valid  <= 1'b1;
@@ -171,6 +178,7 @@ assign ID_ready = EX_ready;
 		  IDEX_pc     <= IFID_pc;
 		  IDEX_csr    <= 12'b0;
 		  IDEX_modbit <= 1'b0;
+      IDEX_is_async <= 1'b0;
 		  IDEX_valid  <= 1'b1;
       end
      

@@ -175,13 +175,31 @@ module memcache(input clk,
 
 
 
+           iram #(.ADDR_W(7), .DEPTH_W(7), .NB_COL(1), .COL_W(16),
+           .LPM_HINT("ENABLE_RUNTIME_MOD=YES,INSTANCE_NAME=CLU0"))
+      cachelookup0(.address(cl_address),
+                   .clock(clk),
+                   .byteena(1'b1),
+                   .data(cl_data[0]),
+                   .wren(cl_wren),
+                   .q(cl_q[0]));
+  
+    iram #(.ADDR_W(7), .DEPTH_W(7), .NB_COL(1), .COL_W(16),
+           .LPM_HINT("ENABLE_RUNTIME_MOD=YES,INSTANCE_NAME=CLU1"))
+      cachelookup1(.address(cl_address),
+                   .clock(clk),
+                   .byteena(1'b1),
+                   .data(cl_data[1]),
+                   .wren(cl_wren),
+                   .q(cl_q[1]));         
 
+/*
   cachelookup cachelookup0(.address(cl_address),
                            .clock(clk),
                            .data(cl_data[0]),
                            .wren(cl_wren),
                            .q(cl_q[0]));
-
+*/
   cache_hw cache1(
              .clock(clk),
              .burst(burst),
@@ -199,7 +217,7 @@ module memcache(input clk,
            );
 
 
-
+/*
   cachelookup cachelookup1(.address(cl_address),
                            .clock(clk),
                            .data(cl_data[1]),
@@ -207,7 +225,7 @@ module memcache(input clk,
                            .q(cl_q[1]));
 
 
-
+*/
 
   always@(posedge clk)
   begin

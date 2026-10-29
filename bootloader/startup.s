@@ -64,7 +64,7 @@ delay:
 
   #jal ra, reset_run  
     # 2. Initialise your stack pointer
-  li sp, 0x00BFFFFC
+  li sp, 0x00AFFFFC
  # li sp,0x00004000
   # 3. Jump to C function
     jal ra, main          # Ensure this matches your exact C function name!

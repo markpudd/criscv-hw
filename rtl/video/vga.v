@@ -37,7 +37,7 @@
 					DONE = 2'd3;
 	
 	
-		localparam CMD_WRITE_DELAY= 2; 		
+		//localparam CMD_WRITE_DELAY= 2; 		
 
 	//  We will use 8 bit pallete as likly to move this to HDMI
 	// this is expensive
@@ -77,7 +77,7 @@
 		wire v_vis;
 	assign v_vis = vpos <V_VISABLE;
 	
-	assign cmd_done =cmd_donel;
+	assign cmd_done = cmd_write; //cmd_donel;
 	
 	assign burst_len = 8'd31;
 	assign vsync = ((vpos > V_VISABLE+V_FRONT_PORCH) && (vpos < V_VISABLE+V_FRONT_PORCH+V_SYNC_PULSE)) ? 1'b0: 1'b1;
@@ -181,7 +181,7 @@
 	always@(posedge clk) begin
 		if(~reset)
 		begin
-			scanline_pos=0;
+			scanline_pos<=0;
 			frame_pos <= frame_start;
 			no_burst<=5;
 		end
@@ -189,12 +189,12 @@
 		begin
 			if(cState == IDLE && hpos ==0 && vpos ==V_TOTAL-2 ) begin
 				frame_pos <= frame_start;
-				scanline_pos=0;
+				scanline_pos<=0;
 				req_burst <=1;
 				no_burst<=5;
 			end
 			if(cState == IDLE && hpos ==H_VISABLE  && vpos[0]==1  && v_vis) begin
-				scanline_pos=0;
+				scanline_pos<=0;
 				req_burst <=1;
 				no_burst<=5;
 			end
@@ -203,7 +203,7 @@
 		   if(cState == READ_DATA) begin
 					req_burst <=0;
 					scanline[scanline_pos] <= read_data;
-					scanline_pos = scanline_pos+9'h1;
+					scanline_pos <= scanline_pos+9'h1;
 			end 
 		   if(cState == DONE) begin
 				frame_pos<=frame_pos+32'd64;

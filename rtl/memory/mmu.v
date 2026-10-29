@@ -111,14 +111,14 @@ module mmu(input clk,
 						.sd_burst_len(sd_burst_len),
 						.sd_data_bursting(sd_data_bursting));
 
-	ram ram(.address(ram_address),
+	/*ram ram(.address(ram_address),
 				.byteena(be),
 				.clock(clk),
 				.data(br_data),
 				.wren(br_lwren),
-				.q(lbr_q));
+				.q(lbr_q));*/
 	
-	/* 
+	//* 
 	//  This is a more portable version which I'm still working on
 
 		iram #(
@@ -126,7 +126,7 @@ module mmu(input clk,
 		.DEPTH_W  (12),                // 4K words = 16KB; match the old numwords_a
 		.NB_COL   (4),                 // 4 byte lanes ...
 		.COL_W    (8),                 // ... of 8 bits = 32-bit word
-		.INIT_FILE("/home/markpudd/rvtst/bootloader/boot.hex")         // whatever init_file the megafunction used
+		.INIT_FILE("/mnt/fpga/criscv-hw/bootloader/boot.hex")         // whatever init_file the megafunction used
 	) lowram (
 		.address (ram_address),
 		.byteena (be),
@@ -135,7 +135,7 @@ module mmu(input clk,
 		.wren    (br_lwren),
 		.q       (lbr_q)
 	);
-	*/
+	//*/
 assign br_q = ce ?	hbr_q : lbr_q;
 
 assign br_hwren = br_wren && ce;
@@ -173,7 +173,7 @@ assign br_data =  (mem_size ==0) ? {4{mem_write_data[7:0]}} :
 						
 assign read_data  = br_q >> {mem_address[1:0], 3'b000};
 
-
+/*
 always @(*)
 begin
 if(owner_d)
@@ -181,7 +181,12 @@ data_out = read_data;
 else
 	inst_out = read_data;	
 end
+*/
 
+always @(*) begin
+	data_out = read_data;
+	inst_out = read_data;
+end
 
 parameter RAM_DELAY =3'b0;
 
