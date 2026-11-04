@@ -204,7 +204,15 @@ int readline(char *buf, int max) {
     c = readchar();
     if(c == '\r') break;
     if(c == '\n') break;
-    if(c == 8 || c == 127) { if(pos>0) pos--; continue; }
+    if(c == 8 || c==127) {
+      if(pos > 0) {
+        pos--;
+        sendchar('\b');
+        sendchar(' ');
+        sendchar('\b');
+      }
+      continue;
+    }
     buf[pos++] = c;
     sendchar(c);
   }
