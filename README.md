@@ -14,8 +14,7 @@ Finally update after a long break.  More to come but headlines are:-
    - Big reduction in LE's, core is ~4000.
    - Increase number of testbenches
    - Improved memory reads so some instructions are executed in 2 cycles which likely drop to 1 with the next update.
-
-
+   - Started to use the https://github.com/riscv-software-src/riscv-tests for verifications, will start to publish report for these shortly.
 
 
 
@@ -23,7 +22,7 @@ Finally update after a long break.  More to come but headlines are:-
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
-If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM
+If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM.  With the update pipelining and a couple of optimisations in the Doom build its gone from ~2 fps to peaking at over 8 fps!  A combinational arbitor will drop this further. 
 
 ## Current Specs
 
