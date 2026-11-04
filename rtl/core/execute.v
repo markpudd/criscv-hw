@@ -52,6 +52,8 @@ module execute(input             mclk,
                  // Mem handshakes
                  output reg    m_valid_d,
                  input    s_valid_d,
+                input data_m_ready,
+
 
                  // Pipeline IFEX Handshake
                  input      IDEX_valid,
@@ -120,7 +122,7 @@ module execute(input             mclk,
 
 
   reg [31:0] mstatus, mscratch, mcause, mtval;   // mtvec, mepc already declared
-
+  reg [31:0] last_pc;
   always @*
   begin
     case (IDEX_csr)
@@ -224,12 +226,13 @@ module execute(input             mclk,
       else if (IDEX_valid && !alu_req) // & IDEX_valid)
       begin
         casex (IDEX_opcode)
-          7'b0010011,7'b0110011 :  // ALU
-          begin
-            //  RV32I - combinational logic
-            rf_we    = ~IDEX_is_async;
-            rf_wdata = rd;
-          end
+        7'b0010011,7'b0110011 :  // ALU
+        begin
+          rf_we    = ~IDEX_is_async;
+          rf_wdata = rd;
+          if (IDEX_is_async)
+            s_ready = 1'b0;      // keep div/mul in EX until alu_done
+        end
           7'b1100011:
           begin // BRANCH
             branch_target = IDEX_pc + IDEX_imm;
@@ -403,7 +406,9 @@ module execute(input             mclk,
       begin
         if (IDEX_valid )
         begin
-          minstret<=minstret+63'b1;
+          if(IDEX_pc != last_pc)
+             minstret<=minstret+63'b1;
+             last_pc=IDEX_pc; 
           if (alu_done)
           begin
             alu_req <= 0;

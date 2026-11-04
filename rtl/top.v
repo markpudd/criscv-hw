@@ -22,7 +22,9 @@ module top(input  mclk,
              output wire per_led,
              output [3:0]r,
              output [3:0]g,
+             output [3:0]b,
              output hsync,
+             output vsync,
 
              output spi_clk,
              output spi_out,
@@ -102,7 +104,7 @@ module top(input  mclk,
   reg sd_rw_req;
 
   // Video has priority
-  always @ (posedge cache_clk)
+  always @ (posedge cpu_clk)
   begin
     if(~reset)
     begin
@@ -166,7 +168,7 @@ module top(input  mclk,
 
 
   
-  vga vga(        .clk(dram_clk_2),	
+  vga vga(        .clk(cpu_clk),	
   	    .vclk(vclk),
   		 .reset(reset),
   		 .address(sd_address_v),
@@ -200,6 +202,9 @@ module top(input  mclk,
   wire        data_m_valid;  // master valid
   wire            data_s_valid;
   wire data_s_valid_mmu;
+  wire inst_m_ready;
+  wire data_m_ready;
+  
 
   criscv cpu(.mclk(cpu_clk),
              .reset(reset),
@@ -214,7 +219,9 @@ module top(input  mclk,
              .inst_out(inst_out),
              .inst_m_valid(inst_m_valid), // master valid
              .inst_s_valid(inst_s_valid),
-
+             .inst_m_ready(inst_m_ready),
+             .data_m_ready(data_m_ready),
+             
              // Data Path Interface
              .data_addr(data_addr),
              .data_in(data_in),
@@ -246,6 +253,8 @@ module top(input  mclk,
           .data_size(data_size),
           .data_m_valid(data_m_valid & ~data_addr[31]),  // master valid
           .data_s_valid(data_s_valid_mmu)	,
+          .inst_m_ready(inst_m_ready),
+          .data_m_ready(data_m_ready),
 
 
           /*
@@ -280,7 +289,7 @@ module top(input  mclk,
                            .rw_req(data_m_valid),
                            .rw(data_we),
                            .write_data(data_in),
-                           .size(size),
+                           .size(data_size),
                            .read_data(pread_data),
                            .prec(prec),
                            .port(port),

@@ -22,7 +22,8 @@ module mmu(input clk,
 				input wire[1:0]   data_size,
 				input wire        data_m_valid,  // master valid
 				output            data_s_valid,
-
+				output inst_m_ready,
+				output data_m_ready,
 /*				 input wire [31:0] address,
 				 input wire  rw,
 				 input wire[31:0] write_data,
@@ -50,6 +51,9 @@ module mmu(input clk,
 					DONE=3'h5;
 
 
+  // inst request is accepted when the arbiter can issue and D isn't asking
+	assign inst_m_ready = can_issue & ~data_m_valid;
+	assign data_m_ready = can_issue;
 
 	reg [3:0] nState;
 	wire [3:0] be_mask;
@@ -136,7 +140,7 @@ module mmu(input clk,
 		.q       (lbr_q)
 	);
 	//*/
-assign br_q = ce ?	hbr_q : lbr_q;
+//assign br_q = ce ?	hbr_q : lbr_q;
 
 assign br_hwren = br_wren && ce;
 assign br_lwren = br_wren && cel;
@@ -152,7 +156,7 @@ assign cel = (mem_address[31]==0  && mem_address < 32'h10000);
 assign mem_req = (m_valid && ce );
 assign br_wren = 	(m_valid && mem_rw );
 
-assign s_valid = (ce ? mc_data_valid : lm_v );//& m_valid;
+//assign s_valid = (ce ? mc_data_valid : lm_v );//& m_valid;
 
 
 
@@ -171,7 +175,7 @@ assign br_data =  (mem_size ==0) ? {4{mem_write_data[7:0]}} :
 						mem_write_data;
 						
 						
-assign read_data  = br_q >> {mem_address[1:0], 3'b000};
+//assign read_data  = br_q >> {mem_address[1:0], 3'b000};
 
 /*
 always @(*)
@@ -190,6 +194,106 @@ end
 
 parameter RAM_DELAY =3'b0;
 
+
+// ---------------------------------------------------------------------------
+// Arbiter: combinational issue, registered copy of the in-flight request
+// ---------------------------------------------------------------------------
+reg        busy;      // request issued, completion not yet seen
+reg        owner_d;   // 1 = in-flight request belongs to D-side
+reg [31:0] h_addr;    // registered copy of the in-flight request
+reg [31:0] h_wdata;
+reg [1:0]  h_size;
+reg        h_rw;
+reg        h_ce;      // in-flight request targets memcache (not low RAM)
+
+// Completion is selected by the *in-flight* request's target, not the live
+// address. This also breaks the s_valid -> issue -> mem_address -> ce loop.
+assign s_valid = h_ce ? mc_data_valid : lm_v;
+wire   done    = busy & s_valid;
+
+// Low RAM: allow a new issue on the completion cycle (1 access/cycle).
+// memcache: wait for completion first, like the old arbiter.
+wire new_cache_wr = pick_d & data_we & (data_addr[31] == 1'b0) & (data_addr >= 32'h10000);
+
+wire can_issue = ~busy
+               | (done & ~(h_ce & h_rw)       // cache write: wait for idle
+                       & ~(h_ce & new_cache_wr));
+wire hold = busy & (~s_valid | (h_ce & h_rw));
+/*
+wire can_issue = ~busy | (done & ~h_ce);
+wire hold      = busy & (h_ce | ~s_valid);   // back to the old hold
+*/
+
+					   wire  pick_d    = data_m_valid;                  // D priority
+wire  issue     = can_issue & (inst_m_valid | data_m_valid);
+
+// Keep a memcache request asserted through its completion cycle, as before.
+// Low-RAM requests only need the issue cycle.
+
+always @(*)
+begin
+  if (issue)
+  begin
+    mem_address    = pick_d ? data_addr : inst_addr;
+    mem_size       = pick_d ? data_size : 2'b10;
+    mem_rw         = pick_d & data_we;
+    mem_write_data = data_in;
+  end
+  else
+  begin
+    mem_address    = h_addr;
+    mem_size       = h_size;
+    mem_rw         = hold & h_rw;     // never write without a valid request
+    mem_write_data = h_wdata;
+  end
+  m_valid = issue | hold;
+end
+
+assign inst_s_valid = done & ~owner_d;
+assign data_s_valid = done &  owner_d;
+
+always @(posedge clk)
+begin
+  if (~reset)
+  begin
+    busy    <= 1'b0;
+    owner_d <= 1'b0;
+    h_addr  <= 32'b0;
+    h_wdata <= 32'b0;
+    h_size  <= 2'b0;
+    h_rw    <= 1'b0;
+    h_ce    <= 1'b0;
+  end
+  else if (issue)
+  begin
+    busy    <= 1'b1;
+    owner_d <= pick_d;
+    h_addr  <= mem_address;
+    h_wdata <= mem_write_data;
+    h_size  <= mem_size;
+    h_rw    <= mem_rw;
+    h_ce    <= ce;               // ce of the address being issued now
+  end
+  else if (done)
+    busy <= 1'b0;
+end
+
+// ---------------------------------------------------------------------------
+// Response side uses the in-flight request, not the live address
+// ---------------------------------------------------------------------------
+assign br_q      = h_ce ? hbr_q : lbr_q;
+assign read_data = br_q >> {h_addr[1:0], 3'b000};
+
+// Low RAM is synchronous: data is valid the cycle after the address is
+// presented. Start lm_v from the issue itself, so a back-to-back issue on the
+// completion cycle is counted.
+always @(posedge clk)
+begin
+  if (~reset) lm_v <= 1'b0;
+  else        lm_v <= issue & ~ce;
+end
+
+/*
 //---------------------------------------------------------------------------
   // Mem Arb --  AI generated this arb originally and TBH it sucks.......
   //---------------------------------------------------------------------------
@@ -250,8 +354,8 @@ parameter RAM_DELAY =3'b0;
     end
   end
 
-
-
+*/
+/*
 	
 always@ ( posedge clk) begin
   if(~reset)
@@ -275,7 +379,7 @@ always@ ( posedge clk) begin
 		lm_v <=0;
 	end
 end
-	
+	*/
 	
 
 endmodule

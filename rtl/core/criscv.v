@@ -17,7 +17,8 @@ module criscv(input  mclk,
                 input wire [31:0] inst_out,
                 output wire        inst_m_valid,  // master valid
                 input            inst_s_valid,
-
+                input   inst_m_ready,
+                input            data_m_ready,
                 // Data Path Interface
                 output wire [31:0] data_addr,
                 output wire [31:0] data_in,
@@ -26,6 +27,7 @@ module criscv(input  mclk,
                 output wire[1:0]   data_size,
                 output wire        data_m_valid,  // master valid
                 input            data_s_valid,
+
                 /*
                 output reg [31:0] mem_address,
                 output reg mem_rw,
@@ -67,9 +69,7 @@ module criscv(input  mclk,
   // Carried over from the original, currently unused
   reg [31:0] delay;
   reg [31:0] instruction;
-
-  reg [31:0] mpx_reg;
-
+  
   assign crash = 1'b0;
   //---------------------------------------------------------------------------
   // Inter-stage nets
@@ -129,7 +129,7 @@ module criscv(input  mclk,
   begin
     //stall = req_d | (busy & owner_d);
     stall = 0; // m_valid_i | m_valid_d;  // stall if there is a memory request//  & ~s_valid; //(mem_rw_req_d & ~mem_rec_d) | (mem_rw_req_i & ~mem_rec_i);
-    // Flush on branch
+    // Flush on branchinst_m_ready
     // ifid_flush = branch_taken & ~stall;
     idex_flush = branch_taken; //& ~stall;
   end
@@ -161,8 +161,8 @@ module criscv(input  mclk,
 
                 .addr_i(inst_addr),
                 .mem_read_data(inst_out),
-
                 .m_valid(inst_m_valid),
+                .m_ready(inst_m_ready),
                 .s_valid(inst_s_valid),
 
                 .IFID_inst(IFID_inst),
@@ -255,7 +255,7 @@ module criscv(input  mclk,
 
                     .m_valid_d(data_m_valid),
                     .s_valid_d(data_s_valid),
-
+                    .data_m_ready(data_m_ready),
 
                     // Pipeline IFEX Handshake
                     .IDEX_valid(IDEX_valid),

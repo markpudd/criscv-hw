@@ -480,7 +480,7 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
 .iplt
  *(.iplt)
 
-.text           0x0000000000c00054     0x7b14
+.text           0x0000000000c00054     0x7b38
  *(.text.unlikely .text.*_unlikely .text.unlikely.*)
  *(.text.exit .text.exit.*)
  .text.exit     0x0000000000c00054       0x48 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-exit.o)
@@ -527,308 +527,308 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
                 0x0000000000c008cc       0x20 build/boot.o
                 0x0000000000c008cc                readchar
  .text.readline
-                0x0000000000c008ec       0xd0 build/boot.o
+                0x0000000000c008ec       0xf4 build/boot.o
                 0x0000000000c008ec                readline
  .text.byte_to_hex
-                0x0000000000c009bc       0x74 build/boot.o
-                0x0000000000c009bc                byte_to_hex
+                0x0000000000c009e0       0x74 build/boot.o
+                0x0000000000c009e0                byte_to_hex
  .text.after_load
-                0x0000000000c00a30      0x1d4 build/boot.o
-                0x0000000000c00a30                after_load
+                0x0000000000c00a54      0x1d4 build/boot.o
+                0x0000000000c00a54                after_load
  .text.mem_addr_test
-                0x0000000000c00c04      0x170 build/boot.o
-                0x0000000000c00c04                mem_addr_test
- .text.ls_cmd   0x0000000000c00d74      0x150 build/boot.o
-                0x0000000000c00d74                ls_cmd
- .text.cd_cmd   0x0000000000c00ec4       0x5c build/boot.o
-                0x0000000000c00ec4                cd_cmd
- .text.pwd_cmd  0x0000000000c00f20       0x68 build/boot.o
-                0x0000000000c00f20                pwd_cmd
- .text.cat_cmd  0x0000000000c00f88       0xe4 build/boot.o
-                0x0000000000c00f88                cat_cmd
- .text.run_cmd  0x0000000000c0106c       0x64 build/boot.o
-                0x0000000000c0106c                run_cmd
+                0x0000000000c00c28      0x170 build/boot.o
+                0x0000000000c00c28                mem_addr_test
+ .text.ls_cmd   0x0000000000c00d98      0x150 build/boot.o
+                0x0000000000c00d98                ls_cmd
+ .text.cd_cmd   0x0000000000c00ee8       0x5c build/boot.o
+                0x0000000000c00ee8                cd_cmd
+ .text.pwd_cmd  0x0000000000c00f44       0x68 build/boot.o
+                0x0000000000c00f44                pwd_cmd
+ .text.cat_cmd  0x0000000000c00fac       0xe4 build/boot.o
+                0x0000000000c00fac                cat_cmd
+ .text.run_cmd  0x0000000000c01090       0x64 build/boot.o
+                0x0000000000c01090                run_cmd
  .text.load_cmd
-                0x0000000000c010d0       0x40 build/boot.o
-                0x0000000000c010d0                load_cmd
+                0x0000000000c010f4       0x40 build/boot.o
+                0x0000000000c010f4                load_cmd
  .text.upload_loop
-                0x0000000000c01110       0x64 build/boot.o
-                0x0000000000c01110                upload_loop
- .text.mt_cmd   0x0000000000c01174       0x38 build/boot.o
-                0x0000000000c01174                mt_cmd
- .text.rb_cmd   0x0000000000c011ac      0x188 build/boot.o
-                0x0000000000c011ac                rb_cmd
- .text.shell    0x0000000000c01334      0x320 build/boot.o
-                0x0000000000c01334                shell
+                0x0000000000c01134       0x64 build/boot.o
+                0x0000000000c01134                upload_loop
+ .text.mt_cmd   0x0000000000c01198       0x38 build/boot.o
+                0x0000000000c01198                mt_cmd
+ .text.rb_cmd   0x0000000000c011d0      0x188 build/boot.o
+                0x0000000000c011d0                rb_cmd
+ .text.shell    0x0000000000c01358      0x320 build/boot.o
+                0x0000000000c01358                shell
  .text.sys_exit
-                0x0000000000c01654       0x20 build/boot.o
-                0x0000000000c01654                sys_exit
- .text          0x0000000000c01674       0x98 build/stdfn.o
-                0x0000000000c01674                syscall
+                0x0000000000c01678       0x20 build/boot.o
+                0x0000000000c01678                sys_exit
+ .text          0x0000000000c01698       0x98 build/stdfn.o
+                0x0000000000c01698                syscall
  .text.fd_to_fil
-                0x0000000000c0170c       0x80 build/stdfn.o
+                0x0000000000c01730       0x80 build/stdfn.o
  .text.fr_to_err
-                0x0000000000c0178c       0x6c build/stdfn.o
+                0x0000000000c017b0       0x6c build/stdfn.o
  .text.stdfn_close_all
-                0x0000000000c017f8       0xa0 build/stdfn.o
-                0x0000000000c017f8                stdfn_close_all
- .text._write   0x0000000000c01898       0xa0 build/stdfn.o
-                0x0000000000c01898                _write
- .text._read    0x0000000000c01938      0x134 build/stdfn.o
-                0x0000000000c01938                _read
- .text._open    0x0000000000c01a6c      0x1f4 build/stdfn.o
-                0x0000000000c01a6c                _open
- .text._lseek   0x0000000000c01c60      0x138 build/stdfn.o
-                0x0000000000c01c60                _lseek
- .text._fstat   0x0000000000c01d98       0xa4 build/stdfn.o
-                0x0000000000c01d98                _fstat
- .text._close   0x0000000000c01e3c       0xa4 build/stdfn.o
-                0x0000000000c01e3c                _close
- .text._getpid  0x0000000000c01ee0       0x24 build/stdfn.o
-                0x0000000000c01ee0                _getpid
- .text._kill    0x0000000000c01f04       0x28 build/stdfn.o
-                0x0000000000c01f04                _kill
- .text._isatty  0x0000000000c01f2c       0x2c build/stdfn.o
-                0x0000000000c01f2c                _isatty
- .text._brk     0x0000000000c01f58       0xa4 build/stdfn.o
-                0x0000000000c01f58                _brk
+                0x0000000000c0181c       0xa0 build/stdfn.o
+                0x0000000000c0181c                stdfn_close_all
+ .text._write   0x0000000000c018bc       0xa0 build/stdfn.o
+                0x0000000000c018bc                _write
+ .text._read    0x0000000000c0195c      0x134 build/stdfn.o
+                0x0000000000c0195c                _read
+ .text._open    0x0000000000c01a90      0x1f4 build/stdfn.o
+                0x0000000000c01a90                _open
+ .text._lseek   0x0000000000c01c84      0x138 build/stdfn.o
+                0x0000000000c01c84                _lseek
+ .text._fstat   0x0000000000c01dbc       0xa4 build/stdfn.o
+                0x0000000000c01dbc                _fstat
+ .text._close   0x0000000000c01e60       0xa4 build/stdfn.o
+                0x0000000000c01e60                _close
+ .text._getpid  0x0000000000c01f04       0x24 build/stdfn.o
+                0x0000000000c01f04                _getpid
+ .text._kill    0x0000000000c01f28       0x28 build/stdfn.o
+                0x0000000000c01f28                _kill
+ .text._isatty  0x0000000000c01f50       0x2c build/stdfn.o
+                0x0000000000c01f50                _isatty
+ .text._brk     0x0000000000c01f7c       0xa4 build/stdfn.o
+                0x0000000000c01f7c                _brk
  .text._gettimeofday
-                0x0000000000c01ffc      0x110 build/stdfn.o
-                0x0000000000c01ffc                _gettimeofday
- .text.put_hex  0x0000000000c0210c       0x88 build/stdfn.o
+                0x0000000000c02020      0x110 build/stdfn.o
+                0x0000000000c02020                _gettimeofday
+ .text.put_hex  0x0000000000c02130       0x88 build/stdfn.o
  .text.trap_fault
-                0x0000000000c02194       0x98 build/stdfn.o
-                0x0000000000c02194                trap_fault
+                0x0000000000c021b8       0x98 build/stdfn.o
+                0x0000000000c021b8                trap_fault
  .text.syscall_c
-                0x0000000000c0222c      0x2bc build/stdfn.o
-                0x0000000000c0222c                syscall_c
- .text.ym_getc  0x0000000000c024e8       0x28 build/ymodem.o
- .text.ym_putc  0x0000000000c02510       0x18 build/ymodem.o
+                0x0000000000c02250      0x2bc build/stdfn.o
+                0x0000000000c02250                syscall_c
+ .text.ym_getc  0x0000000000c0250c       0x28 build/ymodem.o
+ .text.ym_putc  0x0000000000c02534       0x18 build/ymodem.o
  .text.ym_cancel
-                0x0000000000c02528       0x48 build/ymodem.o
+                0x0000000000c0254c       0x48 build/ymodem.o
  .text.ym_receive
-                0x0000000000c02570      0x574 build/ymodem.o
-                0x0000000000c02570                ym_receive
- .text.ld_32    0x0000000000c02ae4       0x2c build/ff.o
+                0x0000000000c02594      0x574 build/ymodem.o
+                0x0000000000c02594                ym_receive
+ .text.ld_32    0x0000000000c02b08       0x2c build/ff.o
  .text.clst2sect
-                0x0000000000c02b10       0x2c build/ff.o
+                0x0000000000c02b34       0x2c build/ff.o
  .text.get_ldnumber
-                0x0000000000c02b3c       0x60 build/ff.o
+                0x0000000000c02b60       0x60 build/ff.o
  .text.validate
-                0x0000000000c02b9c       0x74 build/ff.o
+                0x0000000000c02bc0       0x74 build/ff.o
  .text.get_fileinfo
-                0x0000000000c02c10      0x290 build/ff.o
+                0x0000000000c02c34      0x290 build/ff.o
  .text.move_window
-                0x0000000000c02ea0       0x64 build/ff.o
+                0x0000000000c02ec4       0x64 build/ff.o
  .text.check_fs
-                0x0000000000c02f04      0x160 build/ff.o
+                0x0000000000c02f28      0x160 build/ff.o
  .text.mount_volume.constprop.0
-                0x0000000000c03064      0x36c build/ff.o
+                0x0000000000c03088      0x36c build/ff.o
  .text.ld_clust.isra.0
-                0x0000000000c033d0       0x38 build/ff.o
+                0x0000000000c033f4       0x38 build/ff.o
  .text.get_fat.isra.0
-                0x0000000000c03408      0x164 build/ff.o
+                0x0000000000c0342c      0x164 build/ff.o
  .text.dir_next.constprop.0
-                0x0000000000c0356c       0xf8 build/ff.o
- .text.dir_sdi  0x0000000000c03664      0x11c build/ff.o
+                0x0000000000c03590       0xf8 build/ff.o
+ .text.dir_sdi  0x0000000000c03688      0x11c build/ff.o
  .text.follow_path
-                0x0000000000c03780      0x74c build/ff.o
+                0x0000000000c037a4      0x74c build/ff.o
  .text.dir_read.constprop.0
-                0x0000000000c03ecc      0x204 build/ff.o
- .text.f_mount  0x0000000000c040d0       0x98 build/ff.o
-                0x0000000000c040d0                f_mount
- .text.f_open   0x0000000000c04168      0x100 build/ff.o
-                0x0000000000c04168                f_open
- .text.f_read   0x0000000000c04268      0x214 build/ff.o
-                0x0000000000c04268                f_read
- .text.f_close  0x0000000000c0447c       0x34 build/ff.o
-                0x0000000000c0447c                f_close
- .text.f_chdir  0x0000000000c044b0       0xb0 build/ff.o
-                0x0000000000c044b0                f_chdir
+                0x0000000000c03ef0      0x204 build/ff.o
+ .text.f_mount  0x0000000000c040f4       0x98 build/ff.o
+                0x0000000000c040f4                f_mount
+ .text.f_open   0x0000000000c0418c      0x100 build/ff.o
+                0x0000000000c0418c                f_open
+ .text.f_read   0x0000000000c0428c      0x214 build/ff.o
+                0x0000000000c0428c                f_read
+ .text.f_close  0x0000000000c044a0       0x34 build/ff.o
+                0x0000000000c044a0                f_close
+ .text.f_chdir  0x0000000000c044d4       0xb0 build/ff.o
+                0x0000000000c044d4                f_chdir
  .text.f_getcwd
-                0x0000000000c04560      0x210 build/ff.o
-                0x0000000000c04560                f_getcwd
- .text.f_lseek  0x0000000000c04770      0x1c0 build/ff.o
-                0x0000000000c04770                f_lseek
+                0x0000000000c04584      0x210 build/ff.o
+                0x0000000000c04584                f_getcwd
+ .text.f_lseek  0x0000000000c04794      0x1c0 build/ff.o
+                0x0000000000c04794                f_lseek
  .text.f_opendir
-                0x0000000000c04930       0xcc build/ff.o
-                0x0000000000c04930                f_opendir
+                0x0000000000c04954       0xcc build/ff.o
+                0x0000000000c04954                f_opendir
  .text.f_closedir
-                0x0000000000c049fc       0x34 build/ff.o
-                0x0000000000c049fc                f_closedir
+                0x0000000000c04a20       0x34 build/ff.o
+                0x0000000000c04a20                f_closedir
  .text.f_readdir
-                0x0000000000c04a30       0xa4 build/ff.o
-                0x0000000000c04a30                f_readdir
+                0x0000000000c04a54       0xa4 build/ff.o
+                0x0000000000c04a54                f_readdir
  .text.spi_xfer
-                0x0000000000c04ad4       0x28 build/sddisk.o
+                0x0000000000c04af8       0x28 build/sddisk.o
  .text.sd_select
-                0x0000000000c04afc       0x40 build/sddisk.o
+                0x0000000000c04b20       0x40 build/sddisk.o
  .text.sd_deselect
-                0x0000000000c04b3c        0xc build/sddisk.o
- .text.sd_cmd   0x0000000000c04b48       0xa0 build/sddisk.o
+                0x0000000000c04b60        0xc build/sddisk.o
+ .text.sd_cmd   0x0000000000c04b6c       0xa0 build/sddisk.o
  .text.sddisk_init
-                0x0000000000c04be8      0x298 build/sddisk.o
-                0x0000000000c04be8                sddisk_init
+                0x0000000000c04c0c      0x298 build/sddisk.o
+                0x0000000000c04c0c                sddisk_init
  .text.sddisk_read_block
-                0x0000000000c04e80      0x124 build/sddisk.o
-                0x0000000000c04e80                sddisk_read_block
+                0x0000000000c04ea4      0x124 build/sddisk.o
+                0x0000000000c04ea4                sddisk_read_block
  .text.disk_initialize
-                0x0000000000c04fa4       0x34 build/diskio_sddisk.o
-                0x0000000000c04fa4                disk_initialize
+                0x0000000000c04fc8       0x34 build/diskio_sddisk.o
+                0x0000000000c04fc8                disk_initialize
  .text.disk_status
-                0x0000000000c04fd8       0x18 build/diskio_sddisk.o
-                0x0000000000c04fd8                disk_status
+                0x0000000000c04ffc       0x18 build/diskio_sddisk.o
+                0x0000000000c04ffc                disk_status
  .text.disk_read
-                0x0000000000c04ff0       0x90 build/diskio_sddisk.o
-                0x0000000000c04ff0                disk_read
+                0x0000000000c05014       0x90 build/diskio_sddisk.o
+                0x0000000000c05014                disk_read
  .text.ff_uni2oem
-                0x0000000000c05080       0x64 build/ffunicode.o
-                0x0000000000c05080                ff_uni2oem
+                0x0000000000c050a4       0x64 build/ffunicode.o
+                0x0000000000c050a4                ff_uni2oem
  .text.ff_oem2uni
-                0x0000000000c050e4       0x38 build/ffunicode.o
-                0x0000000000c050e4                ff_oem2uni
+                0x0000000000c05108       0x38 build/ffunicode.o
+                0x0000000000c05108                ff_oem2uni
  .text.ff_wtoupper
-                0x0000000000c0511c       0xf0 build/ffunicode.o
-                0x0000000000c0511c                ff_wtoupper
- .text          0x0000000000c0520c      0x434 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_udivdi3.o)
-                0x0000000000c0520c                __udivdi3
- .text          0x0000000000c05640      0x404 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_umoddi3.o)
-                0x0000000000c05640                __umoddi3
- .text          0x0000000000c05a44       0xb4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(div.o)
-                0x0000000000c05a44                __divsi3
-                0x0000000000c05a4c                __udivsi3
-                0x0000000000c05a94                __umodsi3
-                0x0000000000c05ac8                __modsi3
+                0x0000000000c05140       0xf0 build/ffunicode.o
+                0x0000000000c05140                ff_wtoupper
+ .text          0x0000000000c05230      0x434 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_udivdi3.o)
+                0x0000000000c05230                __udivdi3
+ .text          0x0000000000c05664      0x404 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_umoddi3.o)
+                0x0000000000c05664                __umoddi3
+ .text          0x0000000000c05a68       0xb4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(div.o)
+                0x0000000000c05a68                __divsi3
+                0x0000000000c05a70                __udivsi3
+                0x0000000000c05ab8                __umodsi3
+                0x0000000000c05aec                __modsi3
  .text.__libc_init_array
-                0x0000000000c05af8       0x9c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-init.o)
-                0x0000000000c05af8                __libc_init_array
- .text.__itoa   0x0000000000c05b94       0x6c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-itoa.o)
-                0x0000000000c05b94                __itoa
- .text.itoa     0x0000000000c05c00        0x8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-itoa.o)
-                0x0000000000c05c00                itoa
- .text.memcmp   0x0000000000c05c08       0x30 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memcmp.o)
-                0x0000000000c05c08                memcmp
- .text          0x0000000000c05c38       0x24 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memcpy-asm.o)
-                0x0000000000c05c38                memcpy
- .text          0x0000000000c05c5c       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memset.o)
-                0x0000000000c05c5c                memset
- .text.printf   0x0000000000c05c78       0x78 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-printf.o)
-                0x0000000000c05c78                printf
-                0x0000000000c05c78                iprintf
- .text.strchr   0x0000000000c05cf0       0x28 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strchr.o)
-                0x0000000000c05cf0                strchr
- .text          0x0000000000c05d18       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strcmp.o)
-                0x0000000000c05d18                strcmp
- .text.strcpy   0x0000000000c05d38       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strcpy.o)
-                0x0000000000c05d38                strcpy
- .text.strlen   0x0000000000c05d54       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strlen.o)
-                0x0000000000c05d54                strlen
- .text.strncpy  0x0000000000c05d70       0x38 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strncpy.o)
-                0x0000000000c05d70                strncpy
- .text.strtok   0x0000000000c05da8       0xac /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strtok.o)
-                0x0000000000c05da8                strtok
+                0x0000000000c05b1c       0x9c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-init.o)
+                0x0000000000c05b1c                __libc_init_array
+ .text.__itoa   0x0000000000c05bb8       0x6c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-itoa.o)
+                0x0000000000c05bb8                __itoa
+ .text.itoa     0x0000000000c05c24        0x8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-itoa.o)
+                0x0000000000c05c24                itoa
+ .text.memcmp   0x0000000000c05c2c       0x30 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memcmp.o)
+                0x0000000000c05c2c                memcmp
+ .text          0x0000000000c05c5c       0x24 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memcpy-asm.o)
+                0x0000000000c05c5c                memcpy
+ .text          0x0000000000c05c80       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memset.o)
+                0x0000000000c05c80                memset
+ .text.printf   0x0000000000c05c9c       0x78 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-printf.o)
+                0x0000000000c05c9c                printf
+                0x0000000000c05c9c                iprintf
+ .text.strchr   0x0000000000c05d14       0x28 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strchr.o)
+                0x0000000000c05d14                strchr
+ .text          0x0000000000c05d3c       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strcmp.o)
+                0x0000000000c05d3c                strcmp
+ .text.strcpy   0x0000000000c05d5c       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strcpy.o)
+                0x0000000000c05d5c                strcpy
+ .text.strlen   0x0000000000c05d78       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strlen.o)
+                0x0000000000c05d78                strlen
+ .text.strncpy  0x0000000000c05d94       0x38 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strncpy.o)
+                0x0000000000c05d94                strncpy
+ .text.strtok   0x0000000000c05dcc       0xac /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strtok.o)
+                0x0000000000c05dcc                strtok
  .text.__strtok_r
-                0x0000000000c05e54       0x88 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strtok_r.o)
-                0x0000000000c05e54                __strtok_r
- .text.__utoa   0x0000000000c05edc       0xcc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-utoa.o)
-                0x0000000000c05edc                __utoa
+                0x0000000000c05e78       0x88 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-strtok_r.o)
+                0x0000000000c05e78                __strtok_r
+ .text.__utoa   0x0000000000c05f00       0xcc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-utoa.o)
+                0x0000000000c05f00                __utoa
  .text.__swbuf_r
-                0x0000000000c05fa8      0x148 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-wbuf.o)
-                0x0000000000c05fa8                __swbuf_r
+                0x0000000000c05fcc      0x148 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-wbuf.o)
+                0x0000000000c05fcc                __swbuf_r
  .text.__swsetup_r
-                0x0000000000c060f0      0x184 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-wsetup.o)
-                0x0000000000c060f0                __swsetup_r
+                0x0000000000c06114      0x184 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-wsetup.o)
+                0x0000000000c06114                __swsetup_r
  .text.__sflush_r
-                0x0000000000c06274      0x1f8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fflush.o)
-                0x0000000000c06274                __sflush_r
+                0x0000000000c06298      0x1f8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fflush.o)
+                0x0000000000c06298                __sflush_r
  .text._fflush_r
-                0x0000000000c0646c       0xa8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fflush.o)
-                0x0000000000c0646c                _fflush_r
- .text.std      0x0000000000c06514       0x8c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c06490       0xa8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fflush.o)
+                0x0000000000c06490                _fflush_r
+ .text.std      0x0000000000c06538       0x8c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
  .text._cleanup_r
-                0x0000000000c065a0       0x10 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c065a0                _cleanup_r
+                0x0000000000c065c4       0x10 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c065c4                _cleanup_r
  .text.__sfmoreglue
-                0x0000000000c065b0       0x74 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c065b0                __sfmoreglue
- .text.__sinit  0x0000000000c06624       0xcc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c06624                __sinit
- .text.__sfp    0x0000000000c066f0       0xf8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c066f0                __sfp
+                0x0000000000c065d4       0x74 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c065d4                __sfmoreglue
+ .text.__sinit  0x0000000000c06648       0xcc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c06648                __sinit
+ .text.__sfp    0x0000000000c06714       0xf8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c06714                __sfp
  .text._fwalk_reent
-                0x0000000000c067e8       0xb0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fwalk.o)
-                0x0000000000c067e8                _fwalk_reent
+                0x0000000000c0680c       0xb0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fwalk.o)
+                0x0000000000c0680c                _fwalk_reent
  .text.__swhatbuf_r
-                0x0000000000c06898       0x94 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-makebuf.o)
-                0x0000000000c06898                __swhatbuf_r
+                0x0000000000c068bc       0x94 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-makebuf.o)
+                0x0000000000c068bc                __swhatbuf_r
  .text.__smakebuf_r
-                0x0000000000c0692c       0xfc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-makebuf.o)
-                0x0000000000c0692c                __smakebuf_r
- .text.malloc   0x0000000000c06a28       0x14 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-malloc.o)
-                0x0000000000c06a28                malloc
- .text._free_r  0x0000000000c06a3c      0x10c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-freer.o)
-                0x0000000000c06a3c                _free_r
+                0x0000000000c06950       0xfc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-makebuf.o)
+                0x0000000000c06950                __smakebuf_r
+ .text.malloc   0x0000000000c06a4c       0x14 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-malloc.o)
+                0x0000000000c06a4c                malloc
+ .text._free_r  0x0000000000c06a60      0x10c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-freer.o)
+                0x0000000000c06a60                _free_r
  .text._malloc_r
-                0x0000000000c06b48      0x170 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
-                0x0000000000c06b48                _malloc_r
+                0x0000000000c06b6c      0x170 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
+                0x0000000000c06b6c                _malloc_r
  .text.__sfputc_r
-                0x0000000000c06cb8       0x40 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
+                0x0000000000c06cdc       0x40 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
  .text.__sfputs_r
-                0x0000000000c06cf8       0x78 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
-                0x0000000000c06cf8                __sfputs_r
+                0x0000000000c06d1c       0x78 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
+                0x0000000000c06d1c                __sfputs_r
  .text._vfprintf_r
-                0x0000000000c06d70      0x3f0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
-                0x0000000000c06d70                _vfiprintf_r
-                0x0000000000c06d70                _vfprintf_r
- .text._sbrk_r  0x0000000000c07160       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-sbrkr.o)
-                0x0000000000c07160                _sbrk_r
- .text.__sread  0x0000000000c071b0       0x54 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
-                0x0000000000c071b0                __sread
+                0x0000000000c06d94      0x3f0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
+                0x0000000000c06d94                _vfiprintf_r
+                0x0000000000c06d94                _vfprintf_r
+ .text._sbrk_r  0x0000000000c07184       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-sbrkr.o)
+                0x0000000000c07184                _sbrk_r
+ .text.__sread  0x0000000000c071d4       0x54 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
+                0x0000000000c071d4                __sread
  .text.__swrite
-                0x0000000000c07204       0x8c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
-                0x0000000000c07204                __swrite
- .text.__sseek  0x0000000000c07290       0x5c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
-                0x0000000000c07290                __sseek
+                0x0000000000c07228       0x8c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
+                0x0000000000c07228                __swrite
+ .text.__sseek  0x0000000000c072b4       0x5c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
+                0x0000000000c072b4                __sseek
  .text.__sclose
-                0x0000000000c072ec        0xc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
-                0x0000000000c072ec                __sclose
+                0x0000000000c07310        0xc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-stdio.o)
+                0x0000000000c07310                __sclose
  .text._write_r
-                0x0000000000c072f8       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-writer.o)
-                0x0000000000c072f8                _write_r
+                0x0000000000c0731c       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-writer.o)
+                0x0000000000c0731c                _write_r
  .text._close_r
-                0x0000000000c07350       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-closer.o)
-                0x0000000000c07350                _close_r
+                0x0000000000c07374       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-closer.o)
+                0x0000000000c07374                _close_r
  .text._fstat_r
-                0x0000000000c073a0       0x54 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fstatr.o)
-                0x0000000000c073a0                _fstat_r
+                0x0000000000c073c4       0x54 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-fstatr.o)
+                0x0000000000c073c4                _fstat_r
  .text._isatty_r
-                0x0000000000c073f4       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-isattyr.o)
-                0x0000000000c073f4                _isatty_r
+                0x0000000000c07418       0x50 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-isattyr.o)
+                0x0000000000c07418                _isatty_r
  .text._lseek_r
-                0x0000000000c07444       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-lseekr.o)
-                0x0000000000c07444                _lseek_r
- .text.memchr   0x0000000000c0749c       0x24 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memchr.o)
-                0x0000000000c0749c                memchr
+                0x0000000000c07468       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-lseekr.o)
+                0x0000000000c07468                _lseek_r
+ .text.memchr   0x0000000000c074c0       0x24 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-memchr.o)
+                0x0000000000c074c0                memchr
  .text.__malloc_lock
-                0x0000000000c074c0        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-mlock.o)
-                0x0000000000c074c0                __malloc_lock
+                0x0000000000c074e4        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-mlock.o)
+                0x0000000000c074e4                __malloc_lock
  .text.__malloc_unlock
-                0x0000000000c074c4        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-mlock.o)
-                0x0000000000c074c4                __malloc_unlock
+                0x0000000000c074e8        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-mlock.o)
+                0x0000000000c074e8                __malloc_unlock
  .text._printf_common
-                0x0000000000c074c8      0x1b0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
-                0x0000000000c074c8                _printf_common
+                0x0000000000c074ec      0x1b0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x0000000000c074ec                _printf_common
  .text._printf_i
-                0x0000000000c07678      0x3a8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
-                0x0000000000c07678                _printf_i
- .text._read_r  0x0000000000c07a20       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-readr.o)
-                0x0000000000c07a20                _read_r
- .text._exit    0x0000000000c07a78       0x48 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_exit.o)
-                0x0000000000c07a78                _exit
- .text._sbrk    0x0000000000c07ac0       0x9c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_sbrk.o)
-                0x0000000000c07ac0                _sbrk
- .text.__errno  0x0000000000c07b5c        0xc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-errno.o)
-                0x0000000000c07b5c                __errno
+                0x0000000000c0769c      0x3a8 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x0000000000c0769c                _printf_i
+ .text._read_r  0x0000000000c07a44       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-readr.o)
+                0x0000000000c07a44                _read_r
+ .text._exit    0x0000000000c07a9c       0x48 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_exit.o)
+                0x0000000000c07a9c                _exit
+ .text._sbrk    0x0000000000c07ae4       0x9c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_sbrk.o)
+                0x0000000000c07ae4                _sbrk
+ .text.__errno  0x0000000000c07b80        0xc /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-errno.o)
+                0x0000000000c07b80                __errno
  *(.gnu.warning)
 
 .fini
@@ -837,110 +837,110 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
                 [!provide]                        PROVIDE (_etext = .)
                 [!provide]                        PROVIDE (etext = .)
 
-.rodata         0x0000000000c07b68      0xc7c
+.rodata         0x0000000000c07b8c      0xc7c
  *(.rodata .rodata.* .gnu.linkonce.r.*)
  .rodata.sd_ready.str1.4
-                0x0000000000c07b68       0x22 build/boot.o
- *fill*         0x0000000000c07b8a        0x2 
+                0x0000000000c07b8c       0x22 build/boot.o
+ *fill*         0x0000000000c07bae        0x2 
  .rodata.send_fr.str1.4
-                0x0000000000c07b8c        0x9 build/boot.o
+                0x0000000000c07bb0        0x9 build/boot.o
                                           0xe (size before relaxing)
- *fill*         0x0000000000c07b95        0x3 
+ *fill*         0x0000000000c07bb9        0x3 
  .rodata.sd_load.str1.4
-                0x0000000000c07b98       0x30 build/boot.o
+                0x0000000000c07bbc       0x30 build/boot.o
  .rodata.sd_mount.str1.4
-                0x0000000000c07bc8       0x2a build/boot.o
+                0x0000000000c07bec       0x2a build/boot.o
                                          0x2e (size before relaxing)
- *fill*         0x0000000000c07bf2        0x2 
+ *fill*         0x0000000000c07c16        0x2 
  .rodata.waitForStart.str1.4
-                0x0000000000c07bf4        0x4 build/boot.o
+                0x0000000000c07c18        0x4 build/boot.o
  .rodata.load.str1.4
-                0x0000000000c07bf8       0x1f build/boot.o
- *fill*         0x0000000000c07c17        0x1 
+                0x0000000000c07c1c       0x1f build/boot.o
+ *fill*         0x0000000000c07c3b        0x1 
  .rodata.getBssHeader.str1.4
-                0x0000000000c07c18        0x5 build/boot.o
- *fill*         0x0000000000c07c1d        0x3 
+                0x0000000000c07c3c        0x5 build/boot.o
+ *fill*         0x0000000000c07c41        0x3 
  .rodata.byte_to_hex.str1.4
-                0x0000000000c07c20       0x11 build/boot.o
- *fill*         0x0000000000c07c31        0x3 
+                0x0000000000c07c44       0x11 build/boot.o
+ *fill*         0x0000000000c07c55        0x3 
  .rodata.after_load.str1.4
-                0x0000000000c07c34       0x64 build/boot.o
+                0x0000000000c07c58       0x64 build/boot.o
  .rodata.mem_addr_test.str1.4
-                0x0000000000c07c98       0x2f build/boot.o
- *fill*         0x0000000000c07cc7        0x1 
+                0x0000000000c07cbc       0x2f build/boot.o
+ *fill*         0x0000000000c07ceb        0x1 
  .rodata.ls_cmd.str1.4
-                0x0000000000c07cc8       0x10 build/boot.o
+                0x0000000000c07cec       0x10 build/boot.o
  .rodata.cd_cmd.str1.4
-                0x0000000000c07cd8        0x3 build/boot.o
- *fill*         0x0000000000c07cdb        0x1 
+                0x0000000000c07cfc        0x3 build/boot.o
+ *fill*         0x0000000000c07cff        0x1 
  .rodata.pwd_cmd.str1.4
-                0x0000000000c07cdc        0x4 build/boot.o
+                0x0000000000c07d00        0x4 build/boot.o
  .rodata.cat_cmd.str1.4
-                0x0000000000c07ce0        0x4 build/boot.o
+                0x0000000000c07d04        0x4 build/boot.o
  .rodata.upload_loop.str1.4
-                0x0000000000c07ce4       0x2f build/boot.o
- *fill*         0x0000000000c07d13        0x1 
+                0x0000000000c07d08       0x2f build/boot.o
+ *fill*         0x0000000000c07d37        0x1 
  .rodata.rb_cmd.str1.4
-                0x0000000000c07d14       0x8c build/boot.o
+                0x0000000000c07d38       0x8c build/boot.o
  .rodata.shell.str1.4
-                0x0000000000c07da0      0x13a build/boot.o
- *fill*         0x0000000000c07eda        0x2 
+                0x0000000000c07dc4      0x13a build/boot.o
+ *fill*         0x0000000000c07efe        0x2 
  .rodata.main.str1.4
-                0x0000000000c07edc       0xbe build/boot.o
- *fill*         0x0000000000c07f9a        0x2 
+                0x0000000000c07f00       0xbe build/boot.o
+ *fill*         0x0000000000c07fbe        0x2 
  .rodata.fr_to_err
-                0x0000000000c07f9c       0x3c build/stdfn.o
- .rodata        0x0000000000c07fd8       0x11 build/stdfn.o
- *fill*         0x0000000000c07fe9        0x3 
+                0x0000000000c07fc0       0x3c build/stdfn.o
+ .rodata        0x0000000000c07ffc       0x11 build/stdfn.o
+ *fill*         0x0000000000c0800d        0x3 
  .rodata.syscall_c
-                0x0000000000c07fec       0x98 build/stdfn.o
+                0x0000000000c08010       0x98 build/stdfn.o
  .rodata.check_fs.str1.4
-                0x0000000000c08084        0x9 build/ff.o
- *fill*         0x0000000000c0808d        0x3 
+                0x0000000000c080a8        0x9 build/ff.o
+ *fill*         0x0000000000c080b1        0x3 
  .rodata.follow_path.str1.4
-                0x0000000000c08090       0x13 build/ff.o
- *fill*         0x0000000000c080a3        0x1 
- .rodata.ExCvt  0x0000000000c080a4       0x80 build/ff.o
+                0x0000000000c080b4       0x13 build/ff.o
+ *fill*         0x0000000000c080c7        0x1 
+ .rodata.ExCvt  0x0000000000c080c8       0x80 build/ff.o
  .rodata.LfnOfs
-                0x0000000000c08124        0xd build/ff.o
- *fill*         0x0000000000c08131        0x3 
+                0x0000000000c08148        0xd build/ff.o
+ *fill*         0x0000000000c08155        0x3 
  .rodata.sddisk_init.str1.4
-                0x0000000000c08134       0x9d build/sddisk.o
- *fill*         0x0000000000c081d1        0x3 
+                0x0000000000c08158       0x9d build/sddisk.o
+ *fill*         0x0000000000c081f5        0x3 
  .rodata.sddisk_read_block.str1.4
-                0x0000000000c081d4       0x33 build/sddisk.o
- *fill*         0x0000000000c08207        0x1 
+                0x0000000000c081f8       0x33 build/sddisk.o
+ *fill*         0x0000000000c0822b        0x1 
  .rodata.ff_wtoupper
-                0x0000000000c08208       0x24 build/ffunicode.o
+                0x0000000000c0822c       0x24 build/ffunicode.o
  .rodata.cvt1.1
-                0x0000000000c0822c      0x1f2 build/ffunicode.o
- *fill*         0x0000000000c0841e        0x2 
+                0x0000000000c08250      0x1f2 build/ffunicode.o
+ *fill*         0x0000000000c08442        0x2 
  .rodata.cvt2.0
-                0x0000000000c08420       0xbc build/ffunicode.o
- .rodata.uc437  0x0000000000c084dc      0x100 build/ffunicode.o
- .rodata        0x0000000000c085dc      0x100 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_clz.o)
-                0x0000000000c085dc                __clz_tab
+                0x0000000000c08444       0xbc build/ffunicode.o
+ .rodata.uc437  0x0000000000c08500      0x100 build/ffunicode.o
+ .rodata        0x0000000000c08600      0x100 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_clz.o)
+                0x0000000000c08600                __clz_tab
  .rodata.__utoa.str1.4
-                0x0000000000c086dc       0x25 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-utoa.o)
- *fill*         0x0000000000c08701        0x3 
+                0x0000000000c08700       0x25 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-utoa.o)
+ *fill*         0x0000000000c08725        0x3 
  .rodata.__sf_fake_stderr
-                0x0000000000c08704       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c08704                __sf_fake_stderr
+                0x0000000000c08728       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c08728                __sf_fake_stderr
  .rodata.__sf_fake_stdin
-                0x0000000000c08724       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c08724                __sf_fake_stdin
+                0x0000000000c08748       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c08748                __sf_fake_stdin
  .rodata.__sf_fake_stdout
-                0x0000000000c08744       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
-                0x0000000000c08744                __sf_fake_stdout
+                0x0000000000c08768       0x20 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-findfp.o)
+                0x0000000000c08768                __sf_fake_stdout
  .rodata._vfprintf_r.str1.4
-                0x0000000000c08764       0x13 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
- *fill*         0x0000000000c08777        0x1 
+                0x0000000000c08788       0x13 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf.o)
+ *fill*         0x0000000000c0879b        0x1 
  .rodata._printf_i.str1.4
-                0x0000000000c08778       0x11 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x0000000000c0879c       0x11 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
                                          0x25 (size before relaxing)
- *fill*         0x0000000000c08789        0x3 
+ *fill*         0x0000000000c087ad        0x3 
  .rodata._printf_i
-                0x0000000000c0878c       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
+                0x0000000000c087b0       0x58 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-vfprintf_i.o)
 
 .rodata1
  *(.rodata1)
@@ -967,15 +967,15 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
 
 .exception_ranges
  *(.exception_ranges*)
-                0x0000000000c087e4                . = .
+                0x0000000000c08808                . = .
 
-.eh_frame       0x0000000000c087e4       0x40
+.eh_frame       0x0000000000c08808       0x40
  *(.eh_frame)
- .eh_frame      0x0000000000c087e4        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
- .eh_frame      0x0000000000c087e4       0x28 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_udivdi3.o)
- .eh_frame      0x0000000000c0880c       0x14 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_umoddi3.o)
+ .eh_frame      0x0000000000c08808        0x0 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
+ .eh_frame      0x0000000000c08808       0x28 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_udivdi3.o)
+ .eh_frame      0x0000000000c08830       0x14 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/libgcc.a(_umoddi3.o)
                                          0x28 (size before relaxing)
- .eh_frame      0x0000000000c08820        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
+ .eh_frame      0x0000000000c08844        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
  *(.eh_frame.*)
 
 .gnu_extab
@@ -987,7 +987,7 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
 .exception_ranges
  *(.exception_ranges*)
 
-.tdata          0x0000000000c08824        0x0
+.tdata          0x0000000000c08848        0x0
                 [!provide]                        PROVIDE (__tdata_start = .)
  *(.tdata .tdata.* .gnu.linkonce.td.*)
 
@@ -995,23 +995,23 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
  *(.tbss .tbss.* .gnu.linkonce.tb.*)
  *(.tcommon)
 
-.preinit_array  0x0000000000c08824        0x0
-                0x0000000000c08824                PROVIDE (__preinit_array_start = .)
+.preinit_array  0x0000000000c08848        0x0
+                0x0000000000c08848                PROVIDE (__preinit_array_start = .)
  *(.preinit_array)
-                0x0000000000c08824                PROVIDE (__preinit_array_end = .)
+                0x0000000000c08848                PROVIDE (__preinit_array_end = .)
 
-.init_array     0x0000000000c08824        0x4
-                0x0000000000c08824                PROVIDE (__init_array_start = .)
+.init_array     0x0000000000c08848        0x4
+                0x0000000000c08848                PROVIDE (__init_array_start = .)
  *(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*))
  *(.init_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .ctors)
- .init_array    0x0000000000c08824        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
-                0x0000000000c08828                PROVIDE (__init_array_end = .)
+ .init_array    0x0000000000c08848        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
+                0x0000000000c0884c                PROVIDE (__init_array_end = .)
 
-.fini_array     0x0000000000c08828        0x4
+.fini_array     0x0000000000c0884c        0x4
                 [!provide]                        PROVIDE (__fini_array_start = .)
  *(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*))
  *(.fini_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .dtors)
- .fini_array    0x0000000000c08828        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
+ .fini_array    0x0000000000c0884c        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
                 [!provide]                        PROVIDE (__fini_array_end = .)
 
 .ctors
@@ -1038,11 +1038,11 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
 .dynamic
  *(.dynamic)
 
-.data           0x0000000000c0882c       0x60
-                0x0000000000c0882c                __DATA_BEGIN__ = .
+.data           0x0000000000c08850       0x60
+                0x0000000000c08850                __DATA_BEGIN__ = .
  *(.data .data.* .gnu.linkonce.d.*)
  .data.impure_data
-                0x0000000000c0882c       0x60 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
+                0x0000000000c08850       0x60 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
 
 .data1
  *(.data1)
@@ -1053,77 +1053,77 @@ LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtend.o
  *(.got)
  *(.igot)
 
-.sdata          0x0000000000c0888c        0xc
-                0x0000000000c0888c                __SDATA_BEGIN__ = .
+.sdata          0x0000000000c088b0        0xc
+                0x0000000000c088b0                __SDATA_BEGIN__ = .
  *(.srodata.cst16)
  *(.srodata.cst8)
  *(.srodata.cst4)
  *(.srodata.cst2)
  *(.srodata .srodata.*)
  .srodata._global_impure_ptr
-                0x0000000000c0888c        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
-                0x0000000000c0888c                _global_impure_ptr
+                0x0000000000c088b0        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
+                0x0000000000c088b0                _global_impure_ptr
  *(.sdata .sdata.* .gnu.linkonce.s.*)
  .sdata.drive_status
-                0x0000000000c08890        0x1 build/diskio_sddisk.o
- *fill*         0x0000000000c08891        0x3 
+                0x0000000000c088b4        0x1 build/diskio_sddisk.o
+ *fill*         0x0000000000c088b5        0x3 
  .sdata._impure_ptr
-                0x0000000000c08894        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
-                0x0000000000c08894                _impure_ptr
-                0x0000000000c08898                _edata = .
+                0x0000000000c088b8        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-impure.o)
+                0x0000000000c088b8                _impure_ptr
+                0x0000000000c088bc                _edata = .
                 [!provide]                        PROVIDE (edata = .)
-                0x0000000000c08898                . = .
-                0x0000000000c08898                __bss_start = .
+                0x0000000000c088bc                . = .
+                0x0000000000c088bc                __bss_start = .
 
-.sbss           0x0000000000c08898       0x34
+.sbss           0x0000000000c088bc       0x34
  *(.dynsbss)
  *(.sbss .sbss.* .gnu.linkonce.sb.*)
  .sbss.led_state
-                0x0000000000c08898        0x1 build/boot.o
-                0x0000000000c08898                led_state
- *fill*         0x0000000000c08899        0x3 
+                0x0000000000c088bc        0x1 build/boot.o
+                0x0000000000c088bc                led_state
+ *fill*         0x0000000000c088bd        0x3 
  .sbss.sd_mounted
-                0x0000000000c0889c        0x4 build/boot.o
- .sbss.pid      0x0000000000c088a0        0x4 build/stdfn.o
-                0x0000000000c088a0                pid
- .sbss.fd_used  0x0000000000c088a4        0x4 build/stdfn.o
- .sbss.cur_brk  0x0000000000c088a8        0x4 build/stdfn.o
- .sbss.CurrVol  0x0000000000c088ac        0x1 build/ff.o
- *fill*         0x0000000000c088ad        0x3 
- .sbss.FatFs    0x0000000000c088b0        0x4 build/ff.o
- .sbss.Fsid     0x0000000000c088b4        0x2 build/ff.o
- *fill*         0x0000000000c088b6        0x2 
- .sbss.sd_hc    0x0000000000c088b8        0x4 build/sddisk.o
+                0x0000000000c088c0        0x4 build/boot.o
+ .sbss.pid      0x0000000000c088c4        0x4 build/stdfn.o
+                0x0000000000c088c4                pid
+ .sbss.fd_used  0x0000000000c088c8        0x4 build/stdfn.o
+ .sbss.cur_brk  0x0000000000c088cc        0x4 build/stdfn.o
+ .sbss.CurrVol  0x0000000000c088d0        0x1 build/ff.o
+ *fill*         0x0000000000c088d1        0x3 
+ .sbss.FatFs    0x0000000000c088d4        0x4 build/ff.o
+ .sbss.Fsid     0x0000000000c088d8        0x2 build/ff.o
+ *fill*         0x0000000000c088da        0x2 
+ .sbss.sd_hc    0x0000000000c088dc        0x4 build/sddisk.o
  .sbss.__malloc_free_list
-                0x0000000000c088bc        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
-                0x0000000000c088bc                __malloc_free_list
+                0x0000000000c088e0        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
+                0x0000000000c088e0                __malloc_free_list
  .sbss.__malloc_sbrk_start
-                0x0000000000c088c0        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
-                0x0000000000c088c0                __malloc_sbrk_start
- .sbss.errno    0x0000000000c088c4        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-reent.o)
-                0x0000000000c088c4                errno
+                0x0000000000c088e4        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-nano-mallocr.o)
+                0x0000000000c088e4                __malloc_sbrk_start
+ .sbss.errno    0x0000000000c088e8        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libc_nano.a(lib_a-reent.o)
+                0x0000000000c088e8                errno
  .sbss.heap_end.0
-                0x0000000000c088c8        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_sbrk.o)
+                0x0000000000c088ec        0x4 /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/../../../../riscv64-unknown-elf/lib/rv32im/ilp32/libgloss_nano.a(sys_sbrk.o)
  *(.scommon)
 
-.bss            0x0000000000c088cc      0xce8
+.bss            0x0000000000c088f0      0xce8
  *(.dynbss)
  *(.bss .bss.* .gnu.linkonce.b.*)
- .bss           0x0000000000c088cc       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
+ .bss           0x0000000000c088f0       0x1c /opt/riscv/lib/gcc/riscv64-unknown-elf/10.1.0/rv32im/ilp32/crtbegin.o
  .bss.fileHeader
-                0x0000000000c088e8       0x1c build/boot.o
-                0x0000000000c088e8                fileHeader
- .bss.sd_fs     0x0000000000c08904      0x230 build/boot.o
- .bss.fd_fil    0x0000000000c08b34      0x880 build/stdfn.o
- .bss.LfnBuf    0x0000000000c093b4      0x200 build/ff.o
+                0x0000000000c0890c       0x1c build/boot.o
+                0x0000000000c0890c                fileHeader
+ .bss.sd_fs     0x0000000000c08928      0x230 build/boot.o
+ .bss.fd_fil    0x0000000000c08b58      0x880 build/stdfn.o
+ .bss.LfnBuf    0x0000000000c093d8      0x200 build/ff.o
  *(COMMON)
-                0x0000000000c095b4                . = ALIGN ((. != 0x0)?0x4:0x1)
-                0x0000000000c095b4                . = ALIGN (0x4)
-                0x0000000000c095b4                . = SEGMENT_START ("ldata-segment", .)
-                0x0000000000c095b4                . = ALIGN (0x4)
-                0x0000000000c095b4                __BSS_END__ = .
-                0x0000000000c0902c                __global_pointer$ = MIN ((__SDATA_BEGIN__ + 0x800), MAX ((__DATA_BEGIN__ + 0x800), (__BSS_END__ - 0x800)))
-                0x0000000000c095b4                _end = .
+                0x0000000000c095d8                . = ALIGN ((. != 0x0)?0x4:0x1)
+                0x0000000000c095d8                . = ALIGN (0x4)
+                0x0000000000c095d8                . = SEGMENT_START ("ldata-segment", .)
+                0x0000000000c095d8                . = ALIGN (0x4)
+                0x0000000000c095d8                __BSS_END__ = .
+                0x0000000000c09050                __global_pointer$ = MIN ((__SDATA_BEGIN__ + 0x800), MAX ((__DATA_BEGIN__ + 0x800), (__BSS_END__ - 0x800)))
+                0x0000000000c095d8                _end = .
                 [!provide]                        PROVIDE (end = .)
 
 .stab

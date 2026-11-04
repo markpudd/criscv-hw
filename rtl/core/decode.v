@@ -151,7 +151,7 @@ assign ID_ready = EX_ready;
   end
     if (sys_ready)
     begin
-         if ((EX_ready && IFID_valid) || idex_flush)  // normal case: latch new instruction
+         if ((EX_ready && IFID_valid && !idex_flush) )  // normal case: latch new instruction
       begin
 		//if(~idex_flush)
         IDEX_rs1 <= rs1_fwd;
@@ -167,7 +167,7 @@ assign ID_ready = EX_ready;
         IDEX_pc   <= IFID_pc;
 		    IDEX_valid  <= 1'b1;
       end
-      else if (EX_ready && ~IFID_valid)
+      else if ((EX_ready && ~IFID_valid)|| idex_flush)
       begin
       IDEX_opcode <= 7'b0010011;  // ADDI - decodes as a genuine no-op in EX
 		  IDEX_rd     <= 5'b0;

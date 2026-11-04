@@ -68,8 +68,8 @@ module memcache(input clk,
   wire [6:0]  cl_address;
   wire cl_wren;
   wire [3:0]cl_be;
-  wire [31:0] cl_data[1:0];
-  wire [31:0] cl_q[1:0];
+  //wire [31:0] cl_data[1:0];
+  //wire [31:0] cl_q[1:0];
 
   wire cache_hit_set;
   wire cache_hit0;
@@ -123,9 +123,11 @@ module memcache(input clk,
 
   // Update tags on completion
 
+  reg [14:0] tag_q;
+  always @(posedge clk) tag_q <= cache_tag;
 
-  assign cache_hit0 = (cache_tag == cl_q[0][15:1]);
-  assign cache_hit1 = (cache_tag == cl_q[1][15:1]);
+  //assign cache_hit0 = (tag_q == cl_q[0][15:1]);
+  //assign cache_hit1 = (tag_q == cl_q[1][15:1]);
   assign cache_hit_set = cache_hit0 ? 1'b0 : 1'b1;
 
   assign ac_wren[0] = (rw & data_valid & ~cache_hit_set);
@@ -145,16 +147,48 @@ module memcache(input clk,
 
   assign sd_rw_req= (cState  == LOAD_PAGE) |(cState  == STORE_PAGE);
   assign c_be = (cState != LOAD_PAGE && cState != STORE_PAGE)  ? be : 4'b1111;
-  assign sd_address = (cState  == STORE_PAGE) ? {4'h0 ,cl_q[replace_index][15:1],cache_set,6'h0}: {4'h0 ,cache_tag,cache_set,6'h0};
   assign acc_wren[0] = (cState == LOAD_PAGE) & sd_data_bursting & ~replace_index;
   assign acc_wren[1] = (cState == LOAD_PAGE) & sd_data_bursting &  replace_index;
   assign sd_write_data = h_q[replace_index];  //(a_count[0] == 1)  ? ac_q[replace_index][15:0] :  ac_q[replace_index][31:16];
   assign sd_rw = (cState  == STORE_PAGE) ;
 
+
+
+
+/*
   assign cl_data[0]=  ~replace_index ? {cache_tag,1'b1} : {cl_q[0][15:1],1'b0};
   assign cl_data[1]= replace_index ? {cache_tag,1'b1} : {cl_q[1][15:1],1'b0};
   assign cl_wren=( cState  == UPDATE_CL);
+  assign sd_address = (cState  == STORE_PAGE) ? {4'h0 ,cl_q[replace_index][15:1],cache_set,6'h0}: {4'h0 ,cache_tag,cache_set,6'h0};
+ */
 
+  wire [16:0] cl_data[1:0];
+  wire [16:0] cl_q[1:0];
+  // and COL_W(17) on both cachelookup iram instances
+
+  assign cache_hit0 = (tag_q == cl_q[0][16:2]);
+  assign cache_hit1 = (tag_q == cl_q[1][16:2]);
+
+  // victim chosen combinationally so the miss decision can use its dirty bit
+  wire victim       = cl_q[0][0] & ~cl_q[1][0];   // same policy as before
+  wire victim_dirty = cl_q[victim][1];
+
+  // write hit: mark that way dirty
+  wire wr_hit = (cState == CACHE_CHECK) & data_valid & rw;
+
+  assign cl_data[0] = wr_hit ?
+        (~cache_hit_set ? {cl_q[0][16:2], 1'b1, cl_q[0][0]} : cl_q[0]) :
+        (~replace_index ? {cache_tag, 1'b0, 1'b1}            // refilled: clean, MRU
+                        : {cl_q[0][16:2], cl_q[0][1], 1'b0}); // other way: keep dirty
+  assign cl_data[1] = wr_hit ?
+        ( cache_hit_set ? {cl_q[1][16:2], 1'b1, cl_q[1][0]} : cl_q[1]) :
+        ( replace_index ? {cache_tag, 1'b0, 1'b1}
+                        : {cl_q[1][16:2], cl_q[1][1], 1'b0});
+
+  assign cl_wren = (cState == UPDATE_CL) | wr_hit;
+
+  assign sd_address = (cState == STORE_PAGE) ? {4'h0, cl_q[replace_index][16:2], cache_set, 6'h0}
+                                             : {4'h0, cache_tag, cache_set, 6'h0};
 
 
   cache_hw cache0(
@@ -243,8 +277,12 @@ module memcache(input clk,
 
   always@(posedge clk)
   begin
-
-    if(cState == CACHE_CHECK)
+    if (cState == CACHE_CHECK)
+    begin
+      a_count       <= -6'd1;
+      replace_index <= victim;
+    end
+   /* if(cState == CACHE_CHECK)
     begin
       a_count <= -6'd1;;
       if (!cl_q[0][0])
@@ -253,7 +291,7 @@ module memcache(input clk,
         replace_index <= 1'b1;
       else
         replace_index <= 1'b0;
-    end
+    end*/
     if(cState ==  LOAD_PREP)
       a_count <=  -6'b1;
     else if(sd_data_bursting && (cState == LOAD_PAGE || cState == STORE_PAGE))
@@ -288,12 +326,19 @@ module memcache(input clk,
       end
       CACHE_CHECK:
       begin
-        if(cache_hit0 || cache_hit1)
-          nState = IDLE;
-        //	else if(~cl_q[0][0] || ~cl_q[1][0])	nState = LOAD_PREP;
+        if (cache_hit0 || cache_hit1)
+          nState = (rw_req && ce && !rw) ? CACHE_CHECK : IDLE;
+        else
+          nState = victim_dirty ? STORE_PAGE : LOAD_PREP;
+      end      
+  /*    CACHE_CHECK:
+      begin
+        if (cache_hit0 || cache_hit1)
+          // a new read presented on the hit cycle goes straight into its own check
+          nState = (rw_req && ce && !rw) ? CACHE_CHECK : IDLE;
         else
           nState = STORE_PAGE;
-      end
+      end*/
 
       // Cache miss swap out a page
       STORE_PAGE:

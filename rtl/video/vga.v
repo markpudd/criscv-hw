@@ -25,10 +25,14 @@
 	localparam H_TOTAL = H_VISABLE+H_FRONT_PORCH+H_SYNC_PULSE+H_BACK_PORCH; 	
 
 
-	localparam V_VISABLE= 480; 		
+/*	localparam V_VISABLE= 480; 		
 	localparam V_FRONT_PORCH = 10; 	
 	localparam V_SYNC_PULSE = 2; 	
-	localparam V_BACK_PORCH = 33; 	
+	localparam V_BACK_PORCH = 33; */	
+	localparam V_VISABLE     = 400;
+localparam V_FRONT_PORCH = 12;
+localparam V_SYNC_PULSE  = 2;
+localparam V_BACK_PORCH  = 35; 
 	localparam V_TOTAL = V_VISABLE+V_FRONT_PORCH+V_SYNC_PULSE+V_BACK_PORCH; 
 	
 	localparam 	IDLE = 2'd0,
@@ -80,8 +84,8 @@
 	assign cmd_done = cmd_write; //cmd_donel;
 	
 	assign burst_len = 8'd31;
-	assign vsync = ((vpos > V_VISABLE+V_FRONT_PORCH) && (vpos < V_VISABLE+V_FRONT_PORCH+V_SYNC_PULSE)) ? 1'b0: 1'b1;
-	assign hsync = ((hpos > H_VISABLE+H_FRONT_PORCH) && (hpos < H_VISABLE+H_FRONT_PORCH+H_SYNC_PULSE)) ? 1'b0: 1'b1;
+	//assign vsync = ((vpos > V_VISABLE+V_FRONT_PORCH) && (vpos < V_VISABLE+V_FRONT_PORCH+V_SYNC_PULSE)) ? 1'b0: 1'b1;
+	//assign hsync = ((hpos > H_VISABLE+H_FRONT_PORCH) && (hpos < H_VISABLE+H_FRONT_PORCH+H_SYNC_PULSE)) ? 1'b0: 1'b1;
 	
 	assign rw_req  = (cState== REQUEST_LINE) || (cState==READ_DATA) ;
 	assign sd_busy  = (cState== REQUEST_LINE) || (cState==READ_DATA) ;
@@ -95,68 +99,68 @@
 	
 	// Read MSB from palette 
 	wire [7:0] lu;
-	assign lu = !hpos[1] ? pixel[15:8] : pixel[7:0];
+	assign lu = !hpos[1] ? pixel[7:0] : pixel[15:8];
 	
-	assign r = palette[lu][0];
-	assign g = palette[lu][1];
-	assign b = palette[lu][2];
+	//assign r = palette[lu][0];
+	//assign g = palette[lu][1];
+	//assign b = palette[lu][2];
 
 
 	
-	always@(posedge clk) begin
-		if(~reset)
-		begin
-			frame_start<=32'hC00400;
-			cmd_donel<=0;
+
+	always @(posedge clk) begin
+		if (~reset)
+			frame_start <= 32'hC00400;
+		else if (cmd_write) begin
+			case (cmd_address[9:8])
+				2'b00: palette[cmd_address[7:0]][0] <= cmd_byte[7:4];
+				2'b01: palette[cmd_address[7:0]][1] <= cmd_byte[7:4];
+				2'b10: palette[cmd_address[7:0]][2] <= cmd_byte[7:4];
+				2'b11:
+					if (cmd_address[2]) begin
+						if (cmd_byte[0]) frame_start <= t_frame_start;   // atomic switch
+					end
+					else case (cmd_address[1:0])
+						2'b00: t_frame_start[31:24] <= cmd_byte;
+						2'b01: t_frame_start[23:16] <= cmd_byte;
+						2'b10: t_frame_start[15:8]  <= cmd_byte;
+						2'b11: t_frame_start[7:0]   <= cmd_byte;
+					endcase
+			endcase
 		end
-		else 
-		begin
-			if( cmd_donel==1)
-				 cmd_donel<=0;
-			else if(cmd_write)
-			begin
-				case(cmd_address[9:8])
-				 2'b00: begin
-							 palette[cmd_address[7:0]][0] <= cmd_byte[7:4];
-							 cmd_donel<=1;
-						  end
-				 2'b01: begin
-							 palette[cmd_address[7:0]][1] <= cmd_byte[7:4];
-							 cmd_donel<=1;
-						  end
-				 2'b10: begin
-							 palette[cmd_address[7:0]][2] <= cmd_byte[7:4];
-							 cmd_donel<=1;
-						  end
-				 2'b11: begin
-							 // Atomic frame addressz switch
-							 if(cmd_address[2] && cmd_byte[0]) begin
-								frame_start<=t_frame_start;
-							 end else 
-							 begin
-							 case(cmd_address[1:0]) 
-								2'b00: begin
-											t_frame_start[31:24] <= cmd_byte;
-										 end
-								2'b01: begin
-										   t_frame_start[23:16] <= cmd_byte;
-									   end
-								2'b10: begin
-											t_frame_start[15:8] <= cmd_byte;
-										 end
-								2'b11: begin
-											t_frame_start[7:0] <= cmd_byte;
-										 end
-								endcase
-								
-							end
-							cmd_donel<=1;
-						end
-				endcase
-			end
-		end
-		end
-		
+	end
+// combinational, as now
+	wire       vis_c = (hpos < H_VISABLE) && v_vis;
+	wire [3:0] r_c   = palette[lu][0];
+	wire [3:0] g_c   = palette[lu][1];
+	wire [3:0] b_c   = palette[lu][2];
+	wire       hs_c  = ~((hpos >= H_VISABLE+H_FRONT_PORCH) &&
+						 (hpos <  H_VISABLE+H_FRONT_PORCH+H_SYNC_PULSE));
+	wire       vs_c  = ~((vpos >= V_VISABLE+V_FRONT_PORCH) &&
+						 (vpos <  V_VISABLE+V_FRONT_PORCH+V_SYNC_PULSE));
+	
+	// output registers: nothing between these and the pins
+	reg [3:0] r_o, g_o, b_o;
+	reg       hs_o, vs_o;
+	always @(posedge vclk) begin
+		r_o  <= vis_c ? r_c : 4'd0;
+		g_o  <= vis_c ? g_c : 4'd0;
+		b_o  <= vis_c ? b_c : 4'd0;
+		hs_o <= hs_c;
+		vs_o <= vs_c;
+	end
+	
+	assign r     = r_o;
+	assign g     = g_o;
+	assign b     = b_o;
+	assign hsync = hs_o;
+	assign vsync = vs_o;
+
+//	assign r = r_o;   assign g = g_o;   assign b = b_o;
+//assign hsync = hs_o;
+//assign vsync = vs_o;
+
+
 	always@(posedge vclk) begin
 		if(~reset)
 		begin
@@ -168,8 +172,7 @@
 			if(hpos == H_TOTAL) 
 			begin
 				hpos<=0;
-				if(vpos == V_TOTAL) vpos<=0;
-				else vpos <= vpos+10'h1;
+				vpos <= (vpos == V_TOTAL-1) ? 10'd0 : vpos + 10'd1;
 	
 			end
 			else hpos <= hpos+10'h1;
