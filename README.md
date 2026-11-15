@@ -4,6 +4,7 @@
 
 Finally update after a long break.  More to come but headlines are:-
 
+   - Now added Xilinix support in Vivado. 
    - Move to a 3 stage pipeline from the original FSM.   Some of the stages have a few extra clock cycles but these should be reduced soon.
    - L1 Instruction cache has been temporarily removed
    - Requires alignement of memory
@@ -23,22 +24,27 @@ Finally update after a long break.  More to come but headlines are:-
 
 This is a simple RISC-V verilog implementation (RV32I).   Its not currently fully tested but has successfully run some simple code.  There is a bootloader hex file in the booloader diectory which will allow the uploading of a hex file to SDRAM and execute it.
 
-If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM.  Doom now runs at 10-12 FPS on 50Mhz Cyclone IV.
+This is designed to run in a simple unified memory using the bootloader to load a bigger firmware from and SD car (the bootbin directory).   You can the add built applications on the SD card and run them from the serial terminal.  Applications should be linked at 0x10000 (I'll add example helloworld on next commit).
+
+There are some conditional statements allowing you to use Altera or Xilinix FPGA's.  I currently do not supply the Quartus or Vivado eaxmple project which I will start providing soon, however it should be pretty straigtforward to create new projects, add all the non testbench files from the RTL dierctory, set up pin mappings for your board, point to the bootloader file in mmu.v to where ever the bootloader is (bootloader/boot.hex for Altera / bootloader/bootl.mem for Xilinx).
+
+If your looking to build and run DOOM, basic instructions are here https://github.com/markpudd/criscv-hw/wiki/Running-DOOM.  Doom now runs at 10-12 FPS on 50Mhz Cyclone IV.   
+
+There is currently a bottleneck on clock speed due to combinational multiplier which I intend to fix on the next update.
 
 ## Current Specs
 
-* 50Mhz clock
-* 128 Instruction read only L1 cache
-* 128K 2 Way associative L2 cache
+* 50Mhz clock (can be higher)
+* 8K 2 Way associative L2 cache
 * SDRAM controller
 * UART
 * SPI
 * Video Output- 256 color palatte (4bit per chanel) 320x200 scaled VGA output
 * Basic bootloader with basic System functions implemented (via ECALL) now with support to load for SD card via SPI
-* ~4000 Logic elements when synthised on Cyclone IV E (22,230 avalible LEs)
-* Tested on DE0-Nano
+* ~4000 Logic elements when synthised on Cyclone IV E (22,230 avalible LEs) including memory controller and cache.
+* Tested on DE0-N and and OMtech Artix-7 board
 
-These specs are based on running on Cyclone IV but this could be reconfigure for other FPGA's.
+These specs are based on running on Cyclone IV and Artix but this could be reconfigure for other FPGA's.
 
 ## MMU
  
@@ -108,8 +114,9 @@ Few thing likely to:-
 
     ~~- Add some pipelineing and rewrite all the memory verilog~~  
     - Create a proper memory layout
+    - Move multipliers out of critical timing path
     - Add EBREAK/ECALL and FENCE implementations (short term link stdfn.c and build code with --specs=nano.specs)
+    - Cach control instruction
     - Add some more peripherals
-    - Build on a different FPGA - Xilinx will be next
+    - Relocatable application execution to allow apps to be loaded at different memory address
     - Dual core
-    - Buffering and SW config in UART
