@@ -10,8 +10,7 @@ module sdramburst (
 				input wire[7:0] burst_len,
 				output data_bursting,
 
-				
-				input	  dclk,
+			
 				inout [15:0] dram_dq,
 				output wire [12:0] dram_addr,
 				output wire [1:0] dram_dqm,
@@ -115,7 +114,7 @@ assign read_data =  dram_dq ;
 
 // Only one chip for time being			
 assign dram_cke = 1'b1;
-assign dram_cs_n = 1'b0;	
+//assign dram_cs_n = 1'b0;	
 
 
 reg wc;

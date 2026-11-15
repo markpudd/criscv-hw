@@ -5,6 +5,7 @@ output_files/
 hc_output/
 greybox_tmp/
 quartus/
+vivado/
 
 # Quartus user settings and reports
 *.qws

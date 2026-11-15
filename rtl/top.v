@@ -31,7 +31,9 @@ module top(input  mclk,
              input  spi_sin,
              output spi_cs);
 
-
+    reg [24:0] hb_m, hb_c;
+    
+  wire  [3:0] portt; 
   wire [31:0] address;
 
   wire rw;
@@ -48,9 +50,9 @@ module top(input  mclk,
   wire dram_clkp;
   wire vclkint;
 
-  wire cache_clk;
-  wire cpu_clk;
-  wire vclk;
+//  wire cache_clk;
+//  wire cpu_clk;
+ // wire vclk;
 
   wire [31:0] sd_address;
   wire [15:0] sd_read_data;
@@ -83,8 +85,21 @@ module top(input  mclk,
   wire vga_cmd_done;
   wire vga_cmd_write;
 
+  wire [31:0] data_out;
+
+  criscv_clks criscv_clks (
+      .mclk   (mclk),
+      .vclk      (vclk),        // clk_out1 (25.175 MHz)
+      .cpu_clk   (cpu_clk),
+      .cache_clk (cache_clk),
+      .dram_clk      (dram_clk));
+
+ // dram_clk_out dram_clk_out (
+   //   .mclk   (mclk),
+     // .dram_clk      (dram_clk));
+
   // PLL to clock mem correctly
-  mem_clock memclk (
+ /* mem_clock memclk (
               .inclk0(mclk),
               .c0(cache_clk),
               .c1(cpu_clk));
@@ -92,12 +107,12 @@ module top(input  mclk,
   video_clock video_clock(
                 .inclk0(mclk),
                 .c0(vclk));
+*/
 
-
-  dram_clk dram_clock(
-             .inclk0(mclk),
-             .c0(dram_clk),
-             .c1(dram_clk_2));
+ // dram_clk dram_clock(
+  //           .inclk0(mclk),
+ //            .c0(dram_clk),
+   //          .c1(dram_clk_2));
 
   // Bus Arb - TODO move into MM where it srwhould be
   reg ram_arb;
@@ -144,16 +159,16 @@ module top(input  mclk,
   assign sd_burst_len = ram_arb ? sd_burst_len_mmu :sd_burst_len_v;
 
 
-  assign data_out = ~data_addr[31]? dread_data : pread_data;
 
   wire s_valid_mmu;
 
   assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu:
-         		~data_addr[15] ?
-         	 vga_cmd_done :  prec;
+        		~data_addr[15] ?
+        	 vga_cmd_done :  prec;
 
+  assign data_out = ~data_addr[31]? dread_data : pread_data;
 
- // assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu : prec;
+// assign data_s_valid = ~data_addr[31]?  data_s_valid_mmu : prec;
   assign vga_cmd_write =data_addr[31] & data_m_valid & data_we & ~data_addr[15];
 
   assign mem_led =sdrec;
@@ -188,8 +203,8 @@ module top(input  mclk,
   		 .hsync(hsync));					
   	
 
-  wire [31:0] inst_addr;
-  wire [31:0] inst_out;
+    (* mark_debug = "true" *) wire [31:0] inst_addr;
+     (* mark_debug = "true" *) wire [31:0] inst_out;
   wire        inst_m_valid;  // master valid
   wire            inst_s_valid;
 
@@ -197,10 +212,10 @@ module top(input  mclk,
   wire [31:0] data_addr;
   wire [31:0] data_in;
   wire        data_we;       // Write enable for data path
-  wire [31:0] data_out;
+
   wire[1:0]   data_size;
-  wire        data_m_valid;  // master valid
-  wire            data_s_valid;
+   (* mark_debug = "true" *)  wire        data_m_valid;  // master valid
+//  wire            data_s_valid;
   wire data_s_valid_mmu;
   wire inst_m_ready;
   wire data_m_ready;

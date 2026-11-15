@@ -17,12 +17,12 @@ module alu(input wire clk,
 					DIV_COMP = 2'd2,
 					DONE = 2'd3;
 		
-	localparam 	DIV_DELAY = 4'd7;	
+	localparam 	DIV_DELAY = 6'd38;	
 	
 	
-	reg [5:0] div_counter;
+	reg [6:0] div_counter;
 	
-	
+		reg [31:0] srd; 
 	reg [31:0] d_rd;	
 		
 	assign rd = div_req ? d_rd :srd;
@@ -40,7 +40,7 @@ module alu(input wire clk,
 	assign busy =(cState != DONE);
 
 		
-		
+`ifdef ALTERA_RESERVED_QIS		
   divider divider (.clock (clk),
 						.denom(denom),
 						.numer(numer),
@@ -52,7 +52,38 @@ module alu(input wire clk,
 						.numer(numer),
 						.quotient(uquotient),
 						.remain(uremain));
-		
+	`else
+  wire [79:0] sdiv_dout;
+  wire [79:0] udiv_dout;
+
+  SignedDiv divider (
+    .aclk                   (clk),
+    .s_axis_divisor_tvalid  (1'b1),
+    .s_axis_divisor_tdata   ({{8{denom[31]}}, denom}),
+    .s_axis_dividend_tvalid (1'b1),
+    .s_axis_dividend_tdata  ({{8{numer[31]}}, numer}),
+    .m_axis_dout_tvalid     (),
+    .m_axis_dout_tdata      (sdiv_dout)
+  );
+
+  SignedDiv udivider (
+    .aclk                   (clk),
+    .s_axis_divisor_tvalid  (1'b1),
+    .s_axis_divisor_tdata   ({8'd0, denom}),
+    .s_axis_dividend_tvalid (1'b1),
+    .s_axis_dividend_tdata  ({8'd0, numer}),
+    .m_axis_dout_tvalid     (),
+    .m_axis_dout_tdata      (udiv_dout)
+  );
+
+  assign quotient  = sdiv_dout[71:40];
+  assign remain    = sdiv_dout[31:0];
+  assign uquotient = udiv_dout[71:40];
+  assign uremain   = udiv_dout[31:0];
+
+
+`endif
+	
 
 	// RV32I	
 	
@@ -71,7 +102,7 @@ module alu(input wire clk,
 	wire signed [32:0] b = {b_signed & rs2[31], rs2};
 	wire signed [65:0] prod = a * b;
 
-	reg [31:0] srd; 
+
 	always @(*) begin
 		srd = 32'b0;                          // default - no inferred latch
 		if(rv32i_inst)

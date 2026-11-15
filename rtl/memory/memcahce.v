@@ -308,6 +308,7 @@ module memcache(input clk,
 */
   always@ ( * )
   begin
+  nState = cState;   
     case(cState)
       IDLE:
       begin

@@ -8,7 +8,8 @@ boot: boot.o  $(OBJS)
 	 $(CC) -o $@ $^ $(CFLAGS)
 	 /opt/riscv/bin/riscv64-unknown-elf-objcopy -O binary boot boot.bin
 	 python3 bintohex32.py -s boot.bin > boot.hex
-
+	 python3 bintomem32.py boot.bin > boot.mem
+	 
 startup.o: startup.s
 	$(CC) -c -o $@ $< $(CFLAGS)
 

@@ -130,7 +130,8 @@ module mmu(input clk,
 		.DEPTH_W  (12),                // 4K words = 16KB; match the old numwords_a
 		.NB_COL   (4),                 // 4 byte lanes ...
 		.COL_W    (8),                 // ... of 8 bits = 32-bit word
-		.INIT_FILE("/mnt/fpga/criscv-hw/bootloader/boot.hex")         // whatever init_file the megafunction used
+		.INIT_FILE("/mnt/fpga/criscv-hw/bootloader/boot.hex"),           // Quartus
+        .MEMH_FILE("boot.mem")
 	) lowram (
 		.address (ram_address),
 		.byteena (be),

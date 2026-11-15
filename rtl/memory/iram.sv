@@ -103,8 +103,38 @@ module iram #(
     );
 
 `else
-    logic [NB_COL-1:0][COL_W-1:0] ram [0:WORDS-1];
-    logic [WIDTH-1:0]             q_r;
+
+    xpm_memory_spram #(
+        .ADDR_WIDTH_A       (DEPTH_W),
+        .MEMORY_SIZE        (WORDS * WIDTH),     // total bits
+        .MEMORY_PRIMITIVE   ("block"),
+        .READ_DATA_WIDTH_A  (WIDTH),
+        .WRITE_DATA_WIDTH_A (WIDTH),
+        .BYTE_WRITE_WIDTH_A (COL_W),             // 8, 9, or == WIDTH for one lane
+        .READ_LATENCY_A     (1),                 // registered addr, unregistered q
+        .WRITE_MODE_A       ("read_first"),
+        .MEMORY_INIT_FILE   (MEMH_FILE == "" ? "none" : MEMH_FILE),
+        .MEMORY_INIT_PARAM  ("0"),
+        .USE_MEM_INIT       (1)
+    ) u_xpm (
+        .clka           (clock),
+        .ena            (1'b1),
+        .addra          (a),
+        .dina           (data),
+        .wea (byteena & {NB_COL{wren}}),              // NB_COL bits
+        .douta          (q),
+        .regcea         (1'b1),
+        .rsta           (1'b0),
+        .sleep          (1'b0),
+        .injectsbiterra (1'b0),
+        .injectdbiterra (1'b0),
+        .sbiterra       (),
+        .dbiterra       ()
+    );
+
+/*    (* ram_style = "block" *)
+    reg [WIDTH-1:0] ram [0:WORDS-1];
+    reg [WIDTH-1:0] q_r;
 
     generate
         if (MEMH_FILE != "") begin : g_init
@@ -112,14 +142,19 @@ module iram #(
         end
     endgenerate
 
-    always_ff @(posedge clock) begin
-        if (wren)
-            for (int i = 0; i < NB_COL; i++)
-                if (byteena[i]) ram[a][i] <= data[i*COL_W +: COL_W];
-        q_r <= ram[a];
-    end
+    genvar gi;
+    generate
+        for (gi = 0; gi < NB_COL; gi = gi + 1) begin : g_col
+            always @(posedge clock)
+                if (wren && byteena[gi])
+                    ram[a][gi*COL_W +: COL_W] <= data[gi*COL_W +: COL_W];
+        end
+    endgenerate
 
-    assign q = q_r;
+    always @(posedge clock)
+        q_r <= ram[a];
+
+    assign q = q_r;*/
 `endif
 
 endmodule
